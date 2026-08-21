@@ -166,13 +166,27 @@ const GROUP_TITLES: Record<Group, string> = {
   advanced: 'ADVANCED',
 };
 
-export async function main(argv: string[]): Promise<number> {
-  // Global flags are extracted first so they work in any position.
-  const globals = { json: false, yes: false, help: false, version: false, all: false };
+interface Globals {
+  json: boolean;
+  yes: boolean;
+  help: boolean;
+  version: boolean;
+  all: boolean;
+}
+
+/**
+ * Pull anyagent's own flags out of a token list.
+ *
+ * `stopAtPositional` is what keeps `anyagent claude --help` showing *Claude
+ * Code's* help. Once a name has been given, the flags after it belong to
+ * whatever was named - which is the convention git, docker and kubectl all
+ * follow, and the only way `anyagent codex exec --json` can mean what it says.
+ */
+function takeGlobals(tokens: string[], globals: Globals, stopAtPositional: boolean): string[] {
   const rest: string[] = [];
   let terminated = false;
 
-  for (const token of argv) {
+  for (const [index, token] of tokens.entries()) {
     if (terminated) {
       rest.push(token);
       continue;
@@ -181,6 +195,11 @@ export async function main(argv: string[]): Promise<number> {
       terminated = true;
       rest.push(token);
       continue;
+    }
+    // Everything from the first name onwards is somebody else's business.
+    if (stopAtPositional && !token.startsWith('-')) {
+      rest.push(...tokens.slice(index));
+      break;
     }
     switch (token) {
       case '--json':
@@ -202,6 +221,15 @@ export async function main(argv: string[]): Promise<number> {
         rest.push(token);
     }
   }
+  return rest;
+}
+
+export async function main(argv: string[]): Promise<number> {
+  const globals: Globals = { json: false, yes: false, help: false, version: false, all: false };
+
+  // First pass: only the flags before any name. `anyagent --json ls` and
+  // `anyagent --version` are settled here.
+  const rest = takeGlobals(argv, globals, true);
 
   if (globals.version) {
     out(VERSION);
@@ -209,6 +237,13 @@ export async function main(argv: string[]): Promise<number> {
   }
 
   let [first, ...args] = rest;
+
+  // A command parses its own flags, so `ls --json` keeps working. An agent - or
+  // `run`, which launches one - does not: its flags are forwarded untouched.
+  const launching = first !== undefined && (first === 'run' || Boolean(findAgent(first)));
+  if (!launching && first !== undefined) {
+    args = takeGlobals(args, globals, false);
+  }
 
   // `anyagent help [topic]` behaves like `--help`.
   if (first === 'help') {

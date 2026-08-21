@@ -1,6 +1,6 @@
 {
   "name": "@waspdev95/anyagent",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Run Claude Code, Codex, OpenCode and other coding agents on any model - OpenRouter, DeepSeek, Groq, Ollama or any OpenAI/Anthropic-compatible endpoint. One command instead of per-agent environment variables and config files.",
   "keywords": [
     "ai",

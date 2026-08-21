@@ -70,13 +70,13 @@ describe('dispatch', () => {
 
   test('an agent name is treated as a launch', async () => {
     const { code, output } = await runCli([
+      '--json',
       'claude',
       '--provider',
       'openrouter',
       '-m',
       'deepseek/deepseek-chat',
       '--dry-run',
-      '--json',
     ]);
     assert.equal(code, 0);
     const plan = JSON.parse(output) as { agent: string; wire: string; baseUrl: string };
@@ -87,15 +87,16 @@ describe('dispatch', () => {
 
   test('run <agent> is the same as <agent>', async () => {
     const implicit = await runCli([
+      '--json',
       'claude',
       '--provider',
       'openrouter',
       '-m',
       'deepseek/deepseek-chat',
       '--dry-run',
-      '--json',
     ]);
     const explicit = await runCli([
+      '--json',
       'run',
       'claude',
       '--provider',
@@ -103,7 +104,6 @@ describe('dispatch', () => {
       '-m',
       'deepseek/deepseek-chat',
       '--dry-run',
-      '--json',
     ]);
     assert.deepEqual(JSON.parse(implicit.output), JSON.parse(explicit.output));
   });
@@ -146,13 +146,13 @@ describe('secrets never leak into output', () => {
 describe('argument forwarding', () => {
   test('unknown flags reach the agent unchanged', async () => {
     const { output } = await runCli([
+      '--json',
       'claude',
       '--provider',
       'openrouter',
       '-m',
       'deepseek/deepseek-chat',
       '--dry-run',
-      '--json',
       '--resume',
       '--add-dir',
       'src',
@@ -164,13 +164,13 @@ describe('argument forwarding', () => {
   test('-p is left for the agent, not read as --provider', async () => {
     // Claude Code uses -p for print mode; stealing it would be maddening.
     const { output } = await runCli([
+      '--json',
       'claude',
       '--provider',
       'openrouter',
       '-m',
       'deepseek/deepseek-chat',
       '--dry-run',
-      '--json',
       '-p',
       'hello',
     ]);
@@ -180,18 +180,58 @@ describe('argument forwarding', () => {
   });
 });
 
+describe('where anyagent stops and the agent begins', () => {
+  // git, docker and kubectl all draw this line: global flags come before the
+  // name. Without it `anyagent claude --help` shows the wrong help, and
+  // `anyagent codex exec --json` silently loses the flag it needs.
+  const launch = (extra: string[]) => [
+    'claude',
+    '--provider',
+    'openrouter',
+    '-m',
+    'deepseek/deepseek-chat',
+    '--dry-run',
+    ...extra,
+  ];
+
+  for (const flag of ['--help', '-h', '--version', '-V', '--json', '--yes', '-y']) {
+    test(`${flag} after the agent name is the agent's`, async () => {
+      const { output } = await runCli(launch([flag]));
+      assert.match(output, /would launch as/, `${flag} was intercepted by anyagent`);
+      assert.ok(output.includes(flag), `${flag} never reached the command line`);
+    });
+  }
+
+  test('the same flags before the name belong to anyagent', async () => {
+    const { output } = await runCli(['--json', ...launch([])]);
+    assert.equal((JSON.parse(output) as { agent: string }).agent, 'claude');
+  });
+
+  test('a command still parses its own flags', async () => {
+    // `ls --json` has to keep working: ls is a command, not an agent.
+    const { output } = await runCli(['ls', '--json']);
+    assert.ok(Array.isArray(JSON.parse(output)));
+  });
+
+  test('everything after -- is untouched', async () => {
+    const { output } = await runCli(['--json', ...launch(['--', '-p', 'a & b'])]);
+    const plan = JSON.parse(output) as { command: string[] };
+    assert.deepEqual(plan.command.slice(-2), ['-p', 'a & b']);
+  });
+});
+
 describe('inspecting a launch', () => {
   test('--dry-run works for an agent that is not installed', async () => {
     // Looking before installing is exactly what this flag is for, and CI has
     // none of these agents on PATH.
     const { code, output } = await runCli([
+      '--json',
       'hermes',
       '--provider',
       'openrouter',
       '-m',
       'deepseek/deepseek-chat',
       '--dry-run',
-      '--json',
     ]);
     assert.equal(code, 0);
     const plan = JSON.parse(output) as { agent: string; installed: boolean; binary: string | null };
@@ -201,13 +241,13 @@ describe('inspecting a launch', () => {
 
   test('--print-env works without the agent installed', async () => {
     const { code, output } = await runCli([
+      '--json',
       'hermes',
       '--provider',
       'openrouter',
       '-m',
       'deepseek/deepseek-chat',
       '--print-env',
-      '--json',
     ]);
     assert.equal(code, 0);
     assert.ok(JSON.parse(output) as Record<string, string>);
@@ -240,7 +280,7 @@ describe('errors', () => {
 describe('config and defaults', () => {
   test('use sets defaults that later launches pick up', async () => {
     await runCli(['use', 'openrouter/deepseek/deepseek-chat']);
-    const { output } = await runCli(['claude', '--dry-run', '--json']);
+    const { output } = await runCli(['--json', 'claude', '--dry-run']);
     const plan = JSON.parse(output) as { provider: string; model: string };
     assert.equal(plan.provider, 'openrouter');
     assert.equal(plan.model, 'deepseek/deepseek-chat');
@@ -248,7 +288,7 @@ describe('config and defaults', () => {
 
   test('per-agent defaults beat the global ones', async () => {
     await runCli(['config', 'set', 'agents.claude.model', 'deepseek/deepseek-chat-v3.1']);
-    const { output } = await runCli(['claude', '--dry-run', '--json']);
+    const { output } = await runCli(['--json', 'claude', '--dry-run']);
     assert.equal((JSON.parse(output) as { model: string }).model, 'deepseek/deepseek-chat-v3.1');
     await runCli(['config', 'unset', 'agents.claude.model']);
   });
@@ -261,28 +301,28 @@ describe('config and defaults', () => {
 
 describe('browsing commands', () => {
   test('ls reports agents as JSON', async () => {
-    const { output } = await runCli(['ls', '--json']);
+    const { output } = await runCli(['--json', 'ls']);
     const agents = JSON.parse(output) as { id: string; protocols: string[] }[];
     assert.ok(agents.some((agent) => agent.id === 'claude'));
     assert.ok(agents.every((agent) => agent.protocols.length > 0));
   });
 
   test('providers can be filtered by agent', async () => {
-    const { output } = await runCli(['providers', '--agent', 'claude', '--json']);
+    const { output } = await runCli(['--json', 'providers', '--agent', 'claude']);
     const providers = JSON.parse(output) as { id: string; baseUrl: Record<string, string> }[];
     assert.ok(providers.length > 0);
     assert.ok(providers.every((provider) => Boolean(provider.baseUrl.anthropic)));
   });
 
   test('models search narrows by query', async () => {
-    const { output } = await runCli(['models', 'deepseek', '--provider', 'openrouter', '--json']);
+    const { output } = await runCli(['--json', 'models', 'deepseek', '--provider', 'openrouter']);
     const models = JSON.parse(output) as { id: string }[];
     assert.ok(models.length > 0);
     assert.ok(models.every((model) => model.id.toLowerCase().includes('deepseek')));
   });
 
   test('compat lists the providers each agent can drive', async () => {
-    const { output } = await runCli(['compat', '--json']);
+    const { output } = await runCli(['--json', 'compat']);
     const rows = JSON.parse(output) as { agent: string; providers: string[] }[];
     const claude = rows.find((row) => row.agent === 'claude')!;
     assert.ok(claude.providers.includes('openrouter'));
@@ -307,12 +347,12 @@ describe('env and exec', () => {
 
   test('env --json is machine readable', async () => {
     const { output } = await runCli([
+      '--json',
       'env',
       '--provider',
       'openrouter',
       '-m',
       'deepseek/deepseek-chat',
-      '--json',
     ]);
     const env = JSON.parse(output) as Record<string, string>;
     assert.equal(env.OPENAI_API_KEY, KEY);
@@ -323,14 +363,14 @@ describe('env and exec', () => {
 describe('friendly command names', () => {
   test('`model <id>` sets the default, like `use`', async () => {
     await runCli(['model', 'deepseek/deepseek-chat', '--provider', 'openrouter']);
-    const { output } = await runCli(['claude', '--dry-run', '--json']);
+    const { output } = await runCli(['--json', 'claude', '--dry-run']);
     assert.equal((JSON.parse(output) as { model: string }).model, 'deepseek/deepseek-chat');
   });
 
   test('`model --agent` scopes the change to one agent', async () => {
     await runCli(['model', 'deepseek/deepseek-chat-v3.1', '--agent', 'opencode']);
-    const scoped = await runCli(['opencode', '--dry-run', '--json']);
-    const global = await runCli(['claude', '--dry-run', '--json']);
+    const scoped = await runCli(['--json', 'opencode', '--dry-run']);
+    const global = await runCli(['--json', 'claude', '--dry-run']);
     assert.equal(
       (JSON.parse(scoped.output) as { model: string }).model,
       'deepseek/deepseek-chat-v3.1',
@@ -340,21 +380,21 @@ describe('friendly command names', () => {
   });
 
   test('`key` with no argument lists what is saved', async () => {
-    const { code, output } = await runCli(['key', '--json']);
+    const { code, output } = await runCli(['--json', 'key']);
     assert.equal(code, 0);
     assert.ok(Array.isArray(JSON.parse(output)));
   });
 
   test('`key <provider>` saves one and `key rm` forgets it', async () => {
     await runCli(['key', 'groq', '--key', 'gsk_friendlyname123']);
-    const saved = await runCli(['key', '--json']);
+    const saved = await runCli(['--json', 'key']);
     assert.ok(
       (JSON.parse(saved.output) as { provider: string }[]).some((row) => row.provider === 'groq'),
     );
 
     const removed = await runCli(['key', 'rm', 'groq']);
     assert.equal(removed.code, 0);
-    const after = await runCli(['key', '--json']);
+    const after = await runCli(['--json', 'key']);
     assert.ok(
       !(JSON.parse(after.output) as { provider: string }[]).some((row) => row.provider === 'groq'),
     );
@@ -363,11 +403,11 @@ describe('friendly command names', () => {
   test('the older names still work', async () => {
     // `auth` and `use` are no longer listed, but scripts and muscle memory
     // should not break.
-    const listed = await runCli(['auth', 'list', '--json']);
+    const listed = await runCli(['--json', 'auth', 'list']);
     assert.equal(listed.code, 0);
 
     await runCli(['use', 'openrouter/deepseek/deepseek-chat']);
-    const { output } = await runCli(['claude', '--dry-run', '--json']);
+    const { output } = await runCli(['--json', 'claude', '--dry-run']);
     assert.equal((JSON.parse(output) as { model: string }).model, 'deepseek/deepseek-chat');
   });
 
@@ -380,7 +420,7 @@ describe('friendly command names', () => {
 
 describe('auth', () => {
   test('list shows a masked key sourced from the environment', async () => {
-    const { output } = await runCli(['auth', 'list', '--json']);
+    const { output } = await runCli(['--json', 'auth', 'list']);
     const rows = JSON.parse(output) as { provider: string; key: string; origin: string }[];
     const openrouter = rows.find((row) => row.provider === 'openrouter');
     assert.ok(openrouter);
@@ -390,7 +430,7 @@ describe('auth', () => {
 
   test('a stored key round-trips through the CLI', async () => {
     await runCli(['auth', 'add', 'groq', '--key', 'gsk_storedkey123456']);
-    const { output } = await runCli(['auth', 'list', '--json']);
+    const { output } = await runCli(['--json', 'auth', 'list']);
     const rows = JSON.parse(output) as { provider: string }[];
     assert.ok(rows.some((row) => row.provider === 'groq'));
     await runCli(['auth', 'rm', 'groq']);

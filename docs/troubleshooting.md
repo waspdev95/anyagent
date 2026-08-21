@@ -151,8 +151,28 @@ export OPENROUTER_API_KEY=...      # or ANYAGENT_OPENROUTER_API_KEY
 anyagent claude --provider openrouter -m deepseek/deepseek-v4-pro -- -p "review this diff"
 ```
 
-`--json` is available on `ls`, `providers`, `models`, `compat`, `doctor`,
-`auth list`, `env` and `--dry-run`.
+`--json` is available on `ls`, `providers`, `models`, `compat`, `doctor`, `key`,
+`env` and `--dry-run`.
+
+## A flag went to the wrong program
+
+anyagent's own flags come **before** the agent name; everything after it belongs
+to the agent. This is the same rule git, docker and kubectl use.
+
+```bash
+anyagent --json claude --dry-run   # anyagent prints JSON
+anyagent claude --help             # Claude Code's help, not anyagent's
+anyagent codex exec --json         # codex's --json, untouched
+```
+
+`-m/--model`, `--provider`, `--small`, `--base-url`, `--api-key`, `--save`,
+`--dry-run` and `--print-env` are anyagent's even after the name, because they
+decide what to launch. Everything else is forwarded. If one of those ever
+collides with a flag an agent needs, `--` ends the argument list for good:
+
+```bash
+anyagent claude -- --model something-anyagent-should-not-resolve
+```
 
 ## Something else
 

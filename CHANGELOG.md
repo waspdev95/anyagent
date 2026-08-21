@@ -5,6 +5,16 @@ Notable changes, newest first. This project follows
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-08-21
+
+### Fixed
+
+- `--help`, `--version`, `--json` and `--yes` were intercepted wherever they
+  appeared, so `anyagent claude --help` showed anyagent's help and
+  `anyagent codex exec --json` silently lost the flag. Global flags now belong
+  before the agent name and everything after it is forwarded, as in git and
+  docker. `anyagent --json claude --dry-run` for anyagent's own JSON.
+
 ## [0.1.3] - 2026-08-21
 
 ### Fixed

@@ -47,8 +47,9 @@ anyagent key openrouter                # save a key
 anyagent ls                            # what you have
 ```
 
-Flags anyagent does not recognise go straight to the agent:
-`anyagent claude --resume`, `anyagent codex -- exec "fix the build"`.
+Flags anyagent does not recognise go straight to the agent, including `--help`:
+`anyagent claude --resume --dangerously-skip-permissions`. anyagent's own flags
+go before the name — `anyagent --json claude --dry-run`.
 
 Already have `OPENROUTER_API_KEY` (or `GROQ_API_KEY`, `DEEPSEEK_API_KEY`, …)
 exported? Then there is nothing to set up — anyagent uses it.
