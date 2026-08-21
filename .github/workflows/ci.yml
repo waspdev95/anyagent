@@ -79,6 +79,14 @@ jobs:
           npm pack --dry-run
           # The bundled catalog is what makes an offline install work.
           npm pack --json | grep -q 'dist/data/catalog.snapshot.json.gz'
+      - name: Verify the generated docs are up to date
+        run: |
+          npm run docs
+          git diff --exit-code docs/ || {
+            echo "docs/ is stale - run 'npm run build && npm run docs' and commit" >&2
+            exit 1
+          }
+
       - name: Verify there are no runtime dependencies
         run: |
           test "$(node -p "Object.keys(require('./package.json').dependencies ?? {}).length")" -eq 0
