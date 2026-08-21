@@ -14,54 +14,42 @@ import { keyLooksWrong, type CredentialSource } from '../credentials.js';
 import { AnyAgentError } from '../errors.js';
 import { buildCommand, run, which } from '../exec.js';
 import { confirm, isInteractive, select, text } from '../prompt.js';
+import { byPopularity } from '../popular.js';
 import { negotiateWire, incompatible, resolveProvider } from '../resolve.js';
 import { locate } from '../runner.js';
 import type { Agent, Model, Provider } from '../types.js';
 import { color, formatCost, formatTokens, out, success } from '../ui.js';
 
 /**
- * Providers shown at the top of the picker.
+ * Pick a provider.
  *
- * Ordering by "what a newcomer is most likely to want" beats alphabetical here:
- * the list is 190 entries long and the first screen decides whether the tool
- * feels helpful or overwhelming.
+ * `agent` narrows the list to providers that agent can actually use. It is
+ * optional because the menu's "choose a model" flow is not about one agent.
  */
-const SUGGESTED = [
-  'openrouter',
-  'deepseek',
-  'zai',
-  'moonshotai',
-  'groq',
-  'cerebras',
-  'togetherai',
-  'fireworks-ai',
-  'xai',
-  'openai',
-  'anthropic',
-  'mistral',
-  'ollama',
-];
-
 export async function chooseProvider(
   cli: Cli,
   catalog: Catalog,
-  agent: Agent,
+  agent: Agent | undefined,
   preferred: string | undefined,
 ): Promise<Provider> {
   if (preferred) {
     const provider = resolveProvider(catalog, preferred);
-    if (!negotiateWire(agent, provider)) throw incompatible(agent, provider, catalog);
+    if (agent && !negotiateWire(agent, provider)) throw incompatible(agent, provider, catalog);
     return provider;
   }
 
-  const compatible = catalog.providers.filter((provider) => negotiateWire(agent, provider));
+  const compatible = agent
+    ? catalog.providers.filter((provider) => negotiateWire(agent, provider))
+    : catalog.providers;
   if (compatible.length === 0) {
-    throw new AnyAgentError(`No known provider can drive ${agent.name}.`);
+    throw new AnyAgentError(`No known provider works with ${agent?.name ?? 'anyagent'}.`);
   }
 
   if (!isInteractive()) {
     throw new AnyAgentError('No provider selected.', {
-      hint: `Pass --provider <id>, or set one with \`anyagent use <provider>/<model>\`.\nProviders for ${agent.name}: ${compatible
+      hint: `Pass --provider <id>, or set one with \`anyagent use <provider>/<model>\`.\nProviders${
+        agent ? ` for ${agent.name}` : ''
+      }: ${compatible
         .slice(0, 8)
         .map((provider) => provider.id)
         .join(', ')}`,
@@ -69,11 +57,11 @@ export async function chooseProvider(
   }
 
   const configured = new Set(await cli.store.list());
-  const ranked = [...compatible].sort((a, b) => rank(a, configured) - rank(b, configured));
+  const ranked = byPopularity(compatible, configured);
 
   out();
   const id = await select(
-    `  Which provider should ${agent.name} use?`,
+    agent ? `  Which provider should ${agent.name} use?` : '  Which provider?',
     ranked.map((provider) => ({
       value: provider.id,
       label: provider.id,
@@ -94,12 +82,6 @@ export async function chooseProvider(
   return provider;
 }
 
-function rank(provider: Provider, configured: Set<string>): number {
-  if (configured.has(provider.id)) return -1000;
-  const index = SUGGESTED.indexOf(provider.id);
-  return index === -1 ? 1000 : index;
-}
-
 export async function promptForKey(cli: Cli, provider: Provider): Promise<CredentialSource> {
   if (provider.keyless) {
     return { key: 'anyagent', origin: 'not required (local provider)', ephemeral: true };
@@ -109,7 +91,7 @@ export async function promptForKey(cli: Cli, provider: Provider): Promise<Creden
     throw new AnyAgentError(`No API key for ${provider.name}.`, {
       hint:
         `Set ${provider.env[0] ?? `ANYAGENT_${provider.id.toUpperCase()}_API_KEY`} in the environment, ` +
-        `or run \`anyagent auth add ${provider.id}\`.`,
+        `or run \`anyagent key ${provider.id}\`.`,
     });
   }
 

@@ -13,6 +13,7 @@ import { closest } from './args.js';
 import { findProvider, normalizeBase, providerModels, providersForWire } from './catalog.js';
 import type { Catalog } from './catalog.js';
 import { AnyAgentError } from './errors.js';
+import { byPopularity } from './popular.js';
 import type { Agent, Model, Provider, Target, Wire } from './types.js';
 
 export const WIRE_LABELS: Record<Wire, string> = {
@@ -162,24 +163,42 @@ export function buildTarget(input: TargetInput): Target {
   return target;
 }
 
-/** The error that explains why an agent and a provider cannot be paired. */
+/**
+ * The error that explains why an agent and a provider cannot be paired.
+ *
+ * The first two lines are deliberately free of protocol names: someone hitting
+ * this wants to know what to do, not what an API dialect is called. The
+ * technical detail comes last, for the person who does want it.
+ */
 export function incompatible(agent: Agent, provider: Provider, catalog: Catalog): AnyAgentError {
+  const alternatives = byPopularity(
+    providersForWire(catalog, agent.wires[0]!).filter((candidate) => !candidate.local),
+  )
+    .slice(0, 5)
+    .map((candidate) => candidate.id);
+
   const needs = agent.wires.map((wire) => WIRE_LABELS[wire]).join(' or ');
   const speaks = Object.keys(provider.baseUrl)
     .map((wire) => WIRE_LABELS[wire as Wire])
     .join(', ');
 
-  const alternatives = providersForWire(catalog, agent.wires[0]!)
-    .filter((candidate) => !candidate.local)
-    .slice(0, 6)
-    .map((candidate) => candidate.id);
+  const lines = [`${provider.name} does not offer the kind of API that ${agent.name} needs.`, ''];
+  if (alternatives.length > 0) {
+    lines.push(`Try one of these instead: ${alternatives.join(', ')}`);
+    lines.push(`  anyagent ${agent.id} --provider ${alternatives[0]}`);
+    lines.push('');
+  }
+  const providersHint = `  anyagent providers --agent ${agent.id}`;
+  lines.push(`${providersHint}   everything that works`);
+  lines.push(
+    `  anyagent compat --why${' '.repeat(Math.max(1, providersHint.length - 23))}   the technical reason`,
+  );
+  lines.push('');
+  lines.push(
+    `(${agent.name} needs ${needs}; ${provider.name} offers ${speaks || 'no compatible API'}.)`,
+  );
 
   return new AnyAgentError(`${agent.name} cannot use ${provider.name}.`, {
-    hint:
-      `${agent.name} speaks ${needs}; ${provider.name} serves ${speaks || 'no compatible API'}.\n` +
-      (alternatives.length > 0
-        ? `Providers that work with ${agent.name}: ${alternatives.join(', ')}\n`
-        : '') +
-      `Run \`anyagent compat\` for the full matrix.`,
+    hint: lines.join('\n'),
   });
 }

@@ -3,7 +3,8 @@
 Start here:
 
 ```bash
-anyagent doctor
+anyagent          # the menu has a "check my setup" entry
+anyagent doctor   # or run it directly
 ```
 
 One screen: where your config and keys live, which agents are installed and at
@@ -44,7 +45,7 @@ Common causes:
 
 - **Key from somewhere you forgot.** `anyagent auth list` shows the _source_ of
   each key. An `OPENROUTER_API_KEY` exported in your shell profile beats the one
-  you saved with `anyagent auth add`.
+  you saved with `anyagent key`.
 - **Model not available on your account.** Many providers gate large models.
   `anyagent auth test` succeeding while the agent fails usually means this.
 - **Corporate proxy or TLS interception.** anyagent uses Node's `fetch`; set

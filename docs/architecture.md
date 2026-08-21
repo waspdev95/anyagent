@@ -176,6 +176,23 @@ Resolution order, and only the last one persists:
 The store is an interface with two implementations: a `0600` JSON file (default)
 and an OS-backed keychain (opt-in). See [SECURITY.md](../SECURITY.md).
 
+## The front door
+
+Typing `anyagent` with no arguments opens a menu rather than printing help. The
+list is agents, ordered so that whatever will actually work right now is at the
+top, followed by a few actions - choose a model, add a key, check the setup.
+Selecting an agent runs it and the process becomes that agent.
+
+Without a terminal there is nothing to select, so the same invocation prints
+help instead. Every menu entry has a command behind it, and the short help screen
+shows five of the thirteen commands: the rest are one `help --all` away. Command
+names follow what they do (`model`, `key`) rather than the machinery underneath
+(`use`, `auth`), and both spellings work.
+
+The picker itself is about 120 lines over `node:readline` in raw mode, and it is
+covered by tests that drive a fake terminal - arrow keys, wrapping, separators,
+type-to-filter and cancellation all assert on the value it returns.
+
 ## Errors
 
 Every user-facing failure is an `AnyAgentError` with a message and a hint: what

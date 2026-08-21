@@ -34,6 +34,8 @@ export interface UserConfig extends AgentDefaults {
   credentialStore?: 'file' | 'keychain';
   /** Refresh the model catalog in the background when it goes stale. */
   autoRefreshCatalog?: boolean;
+  /** Agent launched most recently, so the menu opens on it. */
+  lastAgent?: string;
 }
 
 export const DEFAULT_CONFIG: UserConfig = {

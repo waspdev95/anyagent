@@ -6,7 +6,9 @@
 import { parseArgs, type FlagSpecs } from '../args.js';
 import { AGENTS } from '../agents/index.js';
 import type { Catalog } from '../catalog.js';
+import { resolveDefaults } from '../config.js';
 import type { Cli } from '../context.js';
+import { byPopularity } from '../popular.js';
 import { negotiateWire, WIRE_LABELS } from '../resolve.js';
 import { detectVersion, locate } from '../runner.js';
 import type { Wire } from '../types.js';
@@ -44,6 +46,13 @@ export async function lsCommand(cli: Cli, argv: string[]): Promise<number> {
           ? await detectVersion(agent, binary, cli.paths.versionCache)
           : undefined;
       const providers = catalog.providers.filter((provider) => negotiateWire(agent, provider));
+      const defaults = resolveDefaults({
+        agentId: agent.id,
+        user: cli.config,
+        project: cli.project.config,
+        env: cli.env,
+        flags: {},
+      });
       return {
         id: agent.id,
         name: agent.name,
@@ -51,6 +60,8 @@ export async function lsCommand(cli: Cli, argv: string[]): Promise<number> {
         installed: Boolean(binary),
         path: binary,
         version,
+        model: defaults.model,
+        provider: defaults.provider,
         protocols: agent.wires,
         providerCount: providers.length,
       };
@@ -69,32 +80,21 @@ export async function lsCommand(cli: Cli, argv: string[]): Promise<number> {
   heading('  Agents');
   out();
   printTable(
-    [
-      { header: 'agent' },
-      { header: 'status' },
-      { header: 'protocol' },
-      { header: 'providers', align: 'right' },
-      { header: 'description' },
-    ],
+    [{ header: 'agent' }, { header: 'status' }, { header: 'runs on' }, { header: 'what it is' }],
     visible.map((row) => [
-      row.installed ? color.bold(row.id) : row.id,
+      row.installed ? color.bold(row.id) : color.dim(row.id),
       row.installed
-        ? color.green(`${symbols.ok} installed${row.version ? ` ${row.version}` : ''}`)
-        : color.dim('-'),
-      row.protocols.map((wire) => shortWire(wire)).join('/'),
-      String(row.providerCount),
+        ? color.green(`${symbols.ok} ready${row.version ? ` ${row.version}` : ''}`)
+        : color.dim('not installed'),
+      row.installed ? (row.model ?? color.yellow('no model set')) : color.dim('-'),
       color.dim(row.description),
     ]),
   );
   out();
-  note('anyagent <agent>            launch it');
-  note('anyagent compat <agent>     which providers work with it');
+  note('anyagent <agent>       run it');
+  note('anyagent model         change the model');
   out();
   return 0;
-}
-
-function shortWire(wire: Wire): string {
-  return wire === 'anthropic' ? 'anthropic' : wire === 'openai-chat' ? 'chat' : 'responses';
 }
 
 export const PROVIDERS_FLAGS: FlagSpecs = {
@@ -145,7 +145,7 @@ export async function providersCommand(cli: Cli, argv: string[]): Promise<number
   }
 
   const limit = Number.parseInt(String(parsed.flags.limit ?? '40'), 10) || 40;
-  const shown = providers.slice(0, limit);
+  const shown = byPopularity(providers, configured).slice(0, limit);
 
   heading(`  Providers${query ? ` matching "${query}"` : ''}`);
   out();
@@ -153,7 +153,6 @@ export async function providersCommand(cli: Cli, argv: string[]): Promise<number
     [
       { header: 'provider' },
       { header: 'key' },
-      { header: 'protocols' },
       { header: 'models', align: 'right' },
       { header: 'name' },
     ],
@@ -162,11 +161,8 @@ export async function providersCommand(cli: Cli, argv: string[]): Promise<number
       provider.keyless
         ? color.dim('local')
         : configured.has(provider.id)
-          ? color.green(symbols.ok)
+          ? color.green(`${symbols.ok} saved`)
           : color.dim('-'),
-      Object.keys(provider.baseUrl)
-        .map((protocol) => shortWire(protocol as Wire))
-        .join('/'),
       String(catalog.models.get(provider.id)?.length ?? 0),
       color.dim(provider.name),
     ]),
@@ -175,7 +171,7 @@ export async function providersCommand(cli: Cli, argv: string[]): Promise<number
   if (providers.length > shown.length) {
     note(`${providers.length - shown.length} more - narrow the search or pass -n <count>`);
   }
-  note('anyagent auth add <provider>   save a key');
+  note('anyagent key <provider>   save a key for one');
   out();
   return 0;
 }
@@ -246,7 +242,7 @@ export async function modelsCommand(cli: Cli, argv: string[]): Promise<number> {
   );
   out();
   if (rows.length > shown.length) note(`${rows.length - shown.length} more - refine the search`);
-  note('anyagent use <provider>/<model>   make one the default');
+  note('anyagent model <id>   make one the default');
   out();
   return 0;
 }
@@ -264,9 +260,11 @@ function pick(model: {
   };
 }
 
-/** `anyagent compat [agent]` - the agent/provider matrix, and why. */
+/** `anyagent compat [agent]` - which providers work with which agent. */
 export async function compatCommand(cli: Cli, argv: string[]): Promise<number> {
-  const parsed = parseArgs(argv, {});
+  const parsed = parseArgs(argv, {
+    why: { type: 'boolean', description: 'Also show the API each side speaks' },
+  });
   const catalog = await cli.catalog();
   const wanted = parsed.positionals[0];
   const agents = wanted ? AGENTS.filter((agent) => agent.id === wanted) : AGENTS;
@@ -286,28 +284,28 @@ export async function compatCommand(cli: Cli, argv: string[]): Promise<number> {
     return 0;
   }
 
-  heading('  Agent / provider compatibility');
-  out();
-  note('An agent can only use a provider that speaks its protocol.');
+  const why = parsed.flags.why === true;
+
+  heading('  What works with what');
   out();
   printTable(
     [
       { header: 'agent' },
-      { header: 'speaks' },
+      ...(why ? [{ header: 'needs' }] : []),
       ...featured.map((provider) => ({ header: provider.id })),
     ],
     agents.map((agent) => [
       agent.id,
-      color.dim(agent.wires.map((wire) => WIRE_LABELS[wire]).join(', ')),
+      ...(why ? [color.dim(agent.wires.map((wire) => WIRE_LABELS[wire]).join(', '))] : []),
       ...featured.map((provider) =>
         negotiateWire(agent, provider) ? color.green(symbols.ok) : color.dim(symbols.fail),
       ),
     ]),
   );
   out();
-  note(
-    `${catalog.providers.length} providers in total - run \`anyagent providers -a <agent>\` for the full list.`,
-  );
+  note(`Showing ${featured.length} of ${catalog.providers.length} providers.`);
+  note('anyagent providers --agent claude   every provider one agent can use');
+  if (!why) note('anyagent compat --why               why some pairs do not work');
   out();
   return 0;
 }

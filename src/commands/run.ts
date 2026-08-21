@@ -151,6 +151,12 @@ export async function runCommand(cli: Cli, argv: string[]): Promise<number> {
   // Past the inspection branches, a binary is required.
   if (!binary) throw notInstalled(agent);
 
+  // Remembered so the menu opens on whatever was used last.
+  if (cli.config.lastAgent !== agent.id) {
+    cli.config.lastAgent = agent.id;
+    await saveUserConfig(cli.paths.config, cli.config).catch(() => {});
+  }
+
   await applyFiles(agent, plan, { paths: cli.paths, platform: cli.platform });
 
   printBanner(agent, target, plan, credential.origin);

@@ -101,6 +101,8 @@ export interface SelectItem {
   detail?: string;
   /** Extra text matched when filtering, but not displayed. */
   keywords?: string;
+  /** A heading or rule: displayed, never selectable, hidden while filtering. */
+  separator?: boolean;
 }
 
 export interface SelectOptions extends PromptOptions {
@@ -132,9 +134,22 @@ export async function select(
   let visible = items;
   let index = Math.max(
     0,
-    items.findIndex((item) => item.value === options.current),
+    items.findIndex((item) => item.value === options.current && !item.separator),
   );
   let drawnLines = 0;
+
+  /** Move to the next selectable row, skipping separators and wrapping. */
+  const step = (direction: 1 | -1): void => {
+    const count = visible.length;
+    if (count === 0) return;
+    for (let hop = 1; hop <= count; hop += 1) {
+      const next = (index + direction * hop + count * hop) % count;
+      if (!visible[next]?.separator) {
+        index = next;
+        return;
+      }
+    }
+  };
 
   const render = (): void => {
     const lines: string[] = [];
@@ -149,6 +164,10 @@ export async function select(
       );
       const window = visible.slice(Math.max(0, start), Math.max(0, start) + pageSize);
       for (const [offset, item] of window.entries()) {
+        if (item.separator) {
+          lines.push(item.label ? color.dim(`  ${item.label}`) : '');
+          continue;
+        }
         const position = Math.max(0, start) + offset;
         const active = position === index;
         const pointer = active ? color.cyan(symbols.pointer) : ' ';
@@ -179,6 +198,8 @@ export async function select(
     index = Math.min(index, Math.max(0, visible.length - 1));
   };
 
+  if (visible[index]?.separator) step(1);
+
   const wasRaw = input.isRaw ?? false;
   readline.emitKeypressEvents(input);
   if (input.isTTY) input.setRawMode(true);
@@ -199,7 +220,7 @@ export async function select(
 
       if (key.name === 'return' || key.name === 'enter') {
         const chosen = visible[index];
-        if (!chosen) return;
+        if (!chosen || chosen.separator) return;
         finish(() => resolve(chosen.value));
         return;
       }
@@ -208,12 +229,12 @@ export async function select(
         return;
       }
       if (key.name === 'up' || (control && key.name === 'p')) {
-        index = index > 0 ? index - 1 : Math.max(0, visible.length - 1);
+        step(-1);
         render();
         return;
       }
       if (key.name === 'down' || (control && key.name === 'n') || key.name === 'tab') {
-        index = visible.length === 0 ? 0 : (index + 1) % visible.length;
+        step(1);
         render();
         return;
       }

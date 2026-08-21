@@ -1,101 +1,166 @@
 /**
- * Command dispatch.
+ * Command dispatch and help.
  *
- * The dispatcher is deliberately thin, and one rule shapes it: if the first
- * word is an agent, it is a launch. `anyagent claude` and `anyagent run claude`
- * are the same thing, because nobody should have to type `run`.
+ * Two rules shape this file, both about getting out of the way:
+ *
+ *   1. Typing `anyagent` on its own opens a menu, not a wall of text. Nobody
+ *      should have to read documentation to run the thing once.
+ *   2. If the first word is a tool, it is a launch. `anyagent claude` and
+ *      `anyagent run claude` are the same, because nobody should have to type
+ *      `run`.
+ *
+ * The help screen shows five commands. The other eight are real, documented and
+ * one `--all` away - but they are not what the first thirty seconds are for.
  */
 
-import { findAgent, agentNames } from './agents/index.js';
-import { closest } from './args.js';
+import { agentNames, findAgent } from './agents/index.js';
+import { closest, MissingValueError, UnknownFlagError } from './args.js';
 import { authCommand } from './commands/auth.js';
 import { configCommand, useCommand } from './commands/config.js';
 import { envCommand, execCommand } from './commands/exec.js';
 import { compatCommand, lsCommand, modelsCommand, providersCommand } from './commands/list.js';
 import { doctorCommand, restoreCommand, updateCommand } from './commands/maintenance.js';
+import { menuCommand } from './commands/menu.js';
+import { keyCommand, modelCommand } from './commands/model.js';
 import { RUN_FLAGS, runCommand } from './commands/run.js';
 import { createCli, type Cli } from './context.js';
 import { AnyAgentError, CancelledError, redact } from './errors.js';
-import { MissingValueError, UnknownFlagError } from './args.js';
+import { isInteractive } from './prompt.js';
 import { color, err, failure, out, printTable, symbols } from './ui.js';
 import { VERSION } from './version.js';
 
 type Command = (cli: Cli, argv: string[]) => Promise<number>;
 
+/** Which help section a command belongs to, and whether it is shown by default. */
+type Group = 'run' | 'setup' | 'browse' | 'fix' | 'advanced';
+
 interface CommandSpec {
   run: Command;
   summary: string;
   usage: string;
+  group: Group;
+  /** Shown on the short help screen. */
+  essential?: boolean;
 }
 
 const COMMANDS: Record<string, CommandSpec> = {
-  run: { run: runCommand, summary: 'Launch an agent', usage: 'run <agent> [options] [-- args]' },
+  run: {
+    run: runCommand,
+    summary: 'Run an agent (or just type its name)',
+    usage: 'run <agent> [options] [-- extra args]',
+    group: 'run',
+  },
   ls: {
     run: lsCommand,
-    summary: 'List agents and their status',
+    summary: 'Which agents you have, and what they will use',
     usage: 'ls [--installed] [--versions]',
+    group: 'browse',
+    essential: true,
   },
-  providers: {
-    run: providersCommand,
-    summary: 'Browse model providers',
-    usage: 'providers [query] [--agent <id>]',
+  model: {
+    run: modelCommand,
+    summary: 'Choose the AI model',
+    usage: 'model [<id>] [--agent <agent>]',
+    group: 'setup',
+    essential: true,
+  },
+  key: {
+    run: keyCommand,
+    summary: 'Save an API key',
+    usage: 'key [<provider>]',
+    group: 'setup',
+    essential: true,
   },
   models: {
     run: modelsCommand,
-    summary: 'Search models',
+    summary: 'Search for a model',
     usage: 'models [query] [--provider <id>]',
+    group: 'browse',
+  },
+  providers: {
+    run: providersCommand,
+    summary: 'Browse the places models come from',
+    usage: 'providers [query] [--agent <agent>]',
+    group: 'browse',
   },
   compat: {
     run: compatCommand,
-    summary: 'Show which agents work with which providers',
-    usage: 'compat [agent]',
+    summary: 'Which providers work with which agent',
+    usage: 'compat [agent] [--why]',
+    group: 'browse',
+  },
+  doctor: {
+    run: doctorCommand,
+    summary: 'Check my setup',
+    usage: 'doctor',
+    group: 'fix',
+    essential: true,
+  },
+  restore: {
+    run: restoreCommand,
+    summary: 'Undo any config anyagent wrote',
+    usage: 'restore <agent|--all>',
+    group: 'fix',
+  },
+  update: {
+    run: updateCommand,
+    summary: 'Refresh the list of models',
+    usage: 'update',
+    group: 'fix',
   },
   use: {
     run: useCommand,
-    summary: 'Set the default provider and model',
-    usage: 'use <provider>[/<model>]',
+    summary: 'Set provider and model in one go',
+    usage: 'use <provider>/<model>',
+    group: 'advanced',
   },
   auth: {
     run: authCommand,
-    summary: 'Manage API keys',
+    summary: 'Manage API keys (add, list, remove, test)',
     usage: 'auth <add|list|rm|test> [provider]',
+    group: 'advanced',
   },
   config: {
     run: configCommand,
-    summary: 'Read and write configuration',
+    summary: 'Read and write settings',
     usage: 'config <list|get|set|unset|path>',
+    group: 'advanced',
   },
   exec: {
     run: execCommand,
     summary: 'Run any command against the chosen model',
     usage: 'exec -- <command>',
+    group: 'advanced',
   },
   env: {
     run: envCommand,
     summary: 'Print environment variables for eval',
     usage: 'env [--shell posix]',
+    group: 'advanced',
   },
-  doctor: { run: doctorCommand, summary: 'Diagnose the installation', usage: 'doctor' },
-  restore: {
-    run: restoreCommand,
-    summary: 'Undo config changes anyagent made',
-    usage: 'restore <agent|--all>',
-  },
-  update: { run: updateCommand, summary: 'Refresh the model catalog', usage: 'update' },
 };
 
 const ALIASES: Record<string, string> = {
   list: 'ls',
   agents: 'ls',
+  tools: 'ls',
   provider: 'providers',
-  model: 'models',
   keys: 'auth',
   login: 'auth',
+  help: 'help',
+};
+
+const GROUP_TITLES: Record<Group, string> = {
+  run: 'RUN',
+  setup: 'SET UP',
+  browse: 'LOOK AROUND',
+  fix: 'WHEN SOMETHING IS OFF',
+  advanced: 'ADVANCED',
 };
 
 export async function main(argv: string[]): Promise<number> {
   // Global flags are extracted first so they work in any position.
-  const globals = { json: false, yes: false, help: false, version: false };
+  const globals = { json: false, yes: false, help: false, version: false, all: false };
   const rest: string[] = [];
   let terminated = false;
 
@@ -135,36 +200,54 @@ export async function main(argv: string[]): Promise<number> {
     return 0;
   }
 
-  const [first, ...args] = rest;
+  let [first, ...args] = rest;
 
-  if (globals.help || !first) {
-    printHelp(first);
-    return first ? 0 : 0;
+  // `anyagent help [topic]` behaves like `--help`.
+  if (first === 'help') {
+    globals.help = true;
+    globals.all = args.includes('--all') || args.includes('-a');
+    [first, ...args] = args.filter((token) => token !== '--all' && token !== '-a');
+  }
+
+  if (globals.help) {
+    printHelp(first, globals.all);
+    return 0;
   }
 
   const cli = await createCli({ json: globals.json, yes: globals.yes });
+
+  // Nothing to do: open the menu, or explain the tool when there is no terminal.
+  if (!first) {
+    if (!isInteractive() || globals.json) {
+      printHelp();
+      return 0;
+    }
+    return menuCommand(cli);
+  }
 
   const commandName = ALIASES[first] ?? first;
   const command = COMMANDS[commandName];
   if (command) return command.run(cli, args);
 
-  // Not a command - if it names an agent, launch it.
+  // Not a command - if it names an agent, run it.
   if (findAgent(first)) return runCommand(cli, rest);
 
   const suggestion = closest(first, [...Object.keys(COMMANDS), ...agentNames()]);
   throw new AnyAgentError(`Unknown command "${first}".`, {
     hint: suggestion
       ? `Did you mean "${suggestion}"?`
-      : 'Run `anyagent --help` to see the commands, or `anyagent ls` for agents.',
+      : 'Run `anyagent` for the menu, or `anyagent help` for the commands.',
   });
 }
 
-function printHelp(topic?: string): void {
+export function printHelp(topic?: string, all = false): void {
   const spec = topic ? COMMANDS[ALIASES[topic] ?? topic] : undefined;
 
   out();
   out(
-    `  ${color.bold('anyagent')} ${color.dim(VERSION)}  ${color.dim('Any coding agent. Any model. One command.')}`,
+    `  ${color.bold('anyagent')} ${color.dim(VERSION)}  ${color.dim(
+      'Run Claude Code, Codex and other coding agents on any AI model.',
+    )}`,
   );
   out();
 
@@ -172,39 +255,61 @@ function printHelp(topic?: string): void {
     out(`  ${color.bold('USAGE')}`);
     out(`    anyagent ${spec.usage}`);
     out();
-    out(`  ${spec.summary}`);
+    out(`    ${spec.summary}`);
     out();
     return;
   }
 
-  out(`  ${color.bold('USAGE')}`);
-  out('    anyagent <agent> [options] [-- agent args]');
-  out('    anyagent <command> [options]');
-  out();
+  if (!all) {
+    out(`  ${color.bold('START')}`);
+    out(`    anyagent                    ${color.dim('menu: pick and run')}`);
+    out(`    anyagent claude             ${color.dim('or name one directly')}`);
+    out();
 
-  out(`  ${color.bold('QUICK START')}`);
-  out(`    anyagent auth add openrouter        ${color.dim('save a key, once')}`);
-  out(`    anyagent use openrouter/deepseek/deepseek-chat`);
-  out(`    anyagent claude                     ${color.dim('launch with those defaults')}`);
-  out();
+    out(`  ${color.bold('COMMANDS')}`);
+    printTable(
+      [{ header: '' }, { header: '' }],
+      Object.entries(COMMANDS)
+        .filter(([, entry]) => entry.essential)
+        .map(([name, entry]) => [name, color.dim(entry.summary)]),
+      '    ',
+      false,
+    );
+    out();
+    out(color.dim('    anyagent help --all          every command'));
+    out(color.dim('    https://github.com/waspdev95/anyagent'));
+    out();
+    return;
+  }
 
-  out(`  ${color.bold('COMMANDS')}`);
+  for (const group of ['run', 'setup', 'browse', 'fix', 'advanced'] as Group[]) {
+    const entries = Object.entries(COMMANDS).filter(([, entry]) => entry.group === group);
+    if (entries.length === 0) continue;
+    out(`  ${color.bold(GROUP_TITLES[group])}`);
+    printTable(
+      [{ header: '' }, { header: '' }],
+      entries.map(([name, entry]) => [name, color.dim(entry.summary)]),
+      '    ',
+      false,
+    );
+    out();
+  }
+
+  out(`  ${color.bold('OPTIONS WHEN RUNNING AN AGENT')}`);
   printTable(
     [{ header: '' }, { header: '' }],
-    Object.entries(COMMANDS).map(([name, entry]) => [name, color.dim(entry.summary)]),
+    Object.entries(RUN_FLAGS).map(([name, flag]) => [
+      `--${name}${flag.short ? `, -${flag.short}` : ''} ${flag.value ?? ''}`.trim(),
+      color.dim(flag.description),
+    ]),
     '    ',
     false,
   );
   out();
-
-  out(`  ${color.bold('OPTIONS')}`);
+  out(`  ${color.bold('ANYWHERE')}`);
   printTable(
     [{ header: '' }, { header: '' }],
     [
-      ...Object.entries(RUN_FLAGS).map(([name, flag]) => [
-        `--${name}${flag.short ? `, -${flag.short}` : ''} ${flag.value ?? ''}`.trim(),
-        color.dim(flag.description),
-      ]),
       ['--json', color.dim('Machine-readable output')],
       ['--yes, -y', color.dim('Accept prompts without asking')],
       ['--version, -V', color.dim('Print the version')],
@@ -213,7 +318,8 @@ function printHelp(topic?: string): void {
     false,
   );
   out();
-  out(`  ${color.dim('Docs: https://github.com/waspdev95/anyagent')}`);
+  out(color.dim('  Anything anyagent does not recognise is passed to the agent itself.'));
+  out(color.dim('  https://github.com/waspdev95/anyagent'));
   out();
 }
 
@@ -237,7 +343,7 @@ export function reportError(error: unknown): number {
   if (error instanceof UnknownFlagError || error instanceof MissingValueError) {
     err();
     failure(error.message);
-    err(color.dim('  Run `anyagent --help` for the options.'));
+    err(color.dim('  Run `anyagent help` for the commands.'));
     err();
     return 2;
   }

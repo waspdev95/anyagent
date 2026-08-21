@@ -40,11 +40,27 @@ async function runCli(argv: string[]): Promise<{ code: number; output: string }>
 }
 
 describe('dispatch', () => {
-  test('bare invocation prints help', async () => {
+  test('bare invocation prints help when there is no terminal', async () => {
+    // With a TTY this opens the menu; in CI and in pipes it has to explain
+    // itself instead of blocking on a prompt that can never be answered.
     const { code, output } = await runCli([]);
     assert.equal(code, 0);
-    assert.match(output, /Any coding agent\. Any model\. One command\./);
-    assert.match(output, /QUICK START/);
+    assert.match(output, /Run Claude Code, Codex and other coding agents/);
+    assert.match(output, /START/);
+  });
+
+  test('short help stays short, and --all shows everything', async () => {
+    const short = await runCli(['help']);
+    const full = await runCli(['help', '--all']);
+    assert.ok(!short.output.includes('exec'), 'advanced commands leaked into short help');
+    assert.match(full.output, /ADVANCED/);
+    assert.match(full.output, /exec/);
+  });
+
+  test('help for one command explains just that command', async () => {
+    const { output } = await runCli(['help', 'model']);
+    assert.match(output, /anyagent model/);
+    assert.match(output, /Choose the AI model/);
   });
 
   test('--version prints just the version', async () => {
@@ -301,6 +317,41 @@ describe('env and exec', () => {
     const env = JSON.parse(output) as Record<string, string>;
     assert.equal(env.OPENAI_API_KEY, KEY);
     assert.equal(env.ANYAGENT_MODEL, 'deepseek/deepseek-chat');
+  });
+});
+
+describe('friendly command names', () => {
+  test('`model <id>` sets the default, like `use`', async () => {
+    await runCli(['model', 'deepseek/deepseek-chat', '--provider', 'openrouter']);
+    const { output } = await runCli(['claude', '--dry-run', '--json']);
+    assert.equal((JSON.parse(output) as { model: string }).model, 'deepseek/deepseek-chat');
+  });
+
+  test('`model --agent` scopes the change to one agent', async () => {
+    await runCli(['model', 'deepseek/deepseek-chat-v3.1', '--agent', 'opencode']);
+    const scoped = await runCli(['opencode', '--dry-run', '--json']);
+    const global = await runCli(['claude', '--dry-run', '--json']);
+    assert.equal(
+      (JSON.parse(scoped.output) as { model: string }).model,
+      'deepseek/deepseek-chat-v3.1',
+    );
+    assert.equal((JSON.parse(global.output) as { model: string }).model, 'deepseek/deepseek-chat');
+    await runCli(['config', 'unset', 'agents.opencode.model']);
+  });
+
+  test('`key` with no argument lists what is saved', async () => {
+    const { code, output } = await runCli(['key', '--json']);
+    assert.equal(code, 0);
+    assert.ok(Array.isArray(JSON.parse(output)));
+  });
+
+  test('`key <provider> --key` saves one', async () => {
+    await runCli(['key', 'groq', '--key', 'gsk_friendlyname123']);
+    const { output } = await runCli(['auth', 'list', '--json']);
+    assert.ok(
+      (JSON.parse(output) as { provider: string }[]).some((row) => row.provider === 'groq'),
+    );
+    await runCli(['auth', 'rm', 'groq']);
   });
 });
 
