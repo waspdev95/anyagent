@@ -121,22 +121,40 @@ async function apply(
 }
 
 /**
- * `anyagent key [provider]` - save an API key.
+ * `anyagent key` - everything to do with API keys, under one name.
  *
- * With no provider it lists what is already saved, which is the question people
- * actually have ("did I already do this?").
+ *   anyagent key                 what is saved
+ *   anyagent key openrouter      save one
+ *   anyagent key test openrouter does it work
+ *   anyagent key rm openrouter   forget it
+ *
+ * There is no separate `add` verb: naming a provider is the request. With no
+ * argument it lists, because "did I already do this?" is the actual question.
  */
 export async function keyCommand(cli: Cli, argv: string[]): Promise<number> {
   const parsed = parseArgs(
     argv,
     { key: { type: 'string', value: '<key>', description: 'The key, instead of a prompt' } },
-    { maxPositionals: 1, forwardUnknown: true },
+    { maxPositionals: 2, forwardUnknown: true },
   );
 
-  const provider = parsed.positionals[0];
-  if (!provider) return authCommand(cli, ['list']);
+  const [first, second] = parsed.positionals;
+  if (!first) return authCommand(cli, ['list']);
 
-  const args = ['add', provider];
-  if (typeof parsed.flags.key === 'string') args.push('--key', parsed.flags.key);
-  return authCommand(cli, args);
+  switch (first) {
+    case 'list':
+    case 'ls':
+      return authCommand(cli, ['list']);
+    case 'test':
+      return authCommand(cli, second ? ['test', second] : ['test']);
+    case 'rm':
+    case 'remove':
+    case 'delete':
+      return authCommand(cli, ['rm', ...(second ? [second] : [])]);
+    default: {
+      const args = ['add', first];
+      if (typeof parsed.flags.key === 'string') args.push('--key', parsed.flags.key);
+      return authCommand(cli, args);
+    }
+  }
 }

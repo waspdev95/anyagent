@@ -175,4 +175,7 @@ when it drifts far enough to matter; it is roughly 150 KB.
 
 ## Code of conduct
 
-Be decent. See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+Be respectful and assume good faith. Critique the code, not the person, and
+assume the other person knows something you do not - especially about a platform
+or a vendor you have not used. Harassment or demeaning comments are not welcome,
+and maintainers will remove them.

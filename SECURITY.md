@@ -1,95 +1,64 @@
 # Security
 
-## Reporting a vulnerability
+Report vulnerabilities privately through
+[GitHub Security Advisories](https://github.com/waspdev95/anyagent/security/advisories/new),
+not a public issue.
 
-Please report security issues privately through
-[GitHub Security Advisories](https://github.com/waspdev95/anyagent/security/advisories/new)
-rather than a public issue. We aim to acknowledge within 72 hours.
+## Where your keys go
 
-## What anyagent does with your credentials
+**Stored** in `~/.anyagent/credentials.json`, created with mode `0600` (and the
+directory `0700`) on macOS and Linux. On Windows the file inherits your user
+profile's ACL, which already excludes other standard users; anyagent does not
+rewrite ACLs, because `icacls /inheritance:r` is a known way to lock an owner out
+of their own file when an account name does not resolve as expected.
 
-anyagent handles API keys, so it is worth being precise about where they go.
-
-### Storage
-
-The default store is `~/.anyagent/credentials.json`.
-
-- On macOS and Linux it is created with mode `0600` and the directory with `0700`.
-- On Windows the file inherits the ACL of your user profile, which already
-  excludes other standard users. anyagent deliberately does **not** rewrite the
-  ACL: `icacls /inheritance:r` is a well-known way to lock the owner out of their
-  own file when an account name does not resolve as expected. `anyagent doctor`
-  reports where the file lives so you can inspect it.
-
-An opt-in OS-backed store is available:
+**Or in your OS keychain**, if you prefer:
 
 ```bash
 anyagent config set credentialStore keychain
 ```
 
-- macOS: Keychain, via `security`
-- Linux: libsecret, via `secret-tool`
-- Windows: DPAPI, bound to your account; the ciphertext is kept in the same file
-  and cannot be decrypted by another account or on another machine
+macOS Keychain, libsecret on Linux, DPAPI on Windows. Secrets are passed to those
+tools on stdin, never in an argument vector, so they cannot be read from the
+process list.
 
-Secrets are passed to these tools on **stdin**, never in an argument vector, so
-they cannot be read from the process list.
+**Never stored:** keys given with `--api-key` or read from an environment
+variable (`ANYAGENT_<PROVIDER>_API_KEY`, or the provider's own). They are used for
+that invocation only.
 
-### Keys never persisted
+**In transit to an agent:** through the child process environment only. Your
+shell is not modified and no key appears on a command line. Where an agent can
+reference a key by variable _name_ - Codex's `env_key`, DeepSeek Harness's
+`apiKeyEnv` - anyagent uses that, so nothing is written to a config file. Four
+agents (`droid`, `pi`, `openclaw`, `cline`) have no such mechanism, so the key is
+written into their own config exactly as it would be if you configured them by
+hand; `anyagent restore <agent>` removes it again.
 
-Keys supplied through `--api-key` or through an environment variable
-(`ANYAGENT_<PROVIDER>_API_KEY`, or the provider's own variable) are used for that
-invocation and never written to disk.
-
-### Where keys travel
-
-- Agents receive credentials through the **environment of the child process
-  only**. Your shell is not modified, and no key appears on a command line.
-- Where an agent supports referencing a key by variable _name_ — Codex's
-  `env_key`, DeepSeek Harness's `apiKeyEnv` — anyagent uses that, so the key is
-  not written into any config file.
-- Some agents have no such mechanism. For those (`droid`, `pi`, `openclaw`,
-  `cline`) the key is written into the agent's own config file, exactly as it
-  would be if you configured that agent by hand. `anyagent restore <agent>`
-  removes it again. The relevant files are written with mode `0600` on POSIX.
-
-### Output
-
-- Keys are masked wherever they are displayed: `--dry-run`, `auth list`, banners.
-- Error messages, including unexpected ones, pass through a redactor that strips
-  key-shaped strings before printing.
-- `--print-env` prints real values, because that is what it is for. Do not pipe it
-  into a log.
+**In output:** always masked - in `--dry-run`, in `key`, in banners. Error
+messages pass through a redactor that strips key-shaped strings, because HTTP
+clients like to echo request headers back. `--print-env` prints real values,
+because that is what it is for; do not pipe it into a log.
 
 ## Network
 
-anyagent makes exactly two kinds of request:
+Two requests exist in the whole tool:
 
-1. `https://models.dev/api.json`, to refresh the model catalog. No credentials are
-   sent. It can be disabled entirely:
+1. `https://models.dev/api.json`, to refresh the model catalog. No credentials
+   are sent, and it can be turned off entirely with
+   `anyagent config set autoRefreshCatalog false` or `ANYAGENT_CATALOG_OFFLINE=1`.
+   A fresh install works with no network: a snapshot ships in the package.
+2. `anyagent key test <provider>`, which makes one authenticated request to the
+   provider you name.
 
-   ```bash
-   anyagent config set autoRefreshCatalog false
-   # or per invocation:
-   ANYAGENT_CATALOG_OFFLINE=1 anyagent claude
-   ```
-
-   A fresh install works with no network at all: a catalog snapshot ships in the
-   package.
-
-2. `anyagent auth test`, which makes one authenticated request to the provider you
-   name. Nothing else contacts a provider — the agent does that itself.
-
-There is no telemetry, no analytics and no crash reporting.
+No telemetry, no analytics, no crash reporting.
 
 ## Installing agents
 
-`anyagent` offers to install a missing agent using the vendor's own documented
-command, and only after an explicit confirmation. It never installs anything
-unattended, and it never installs from a source the vendor does not publish.
+anyagent offers to install a missing agent with the vendor's own documented
+command, only after an explicit yes, and never from a source the vendor does not
+publish.
 
 ## Supply chain
 
-anyagent has **zero runtime dependencies**. The published package contains
-compiled JavaScript and one gzipped data file. Development dependencies are
-limited to TypeScript, ESLint and Prettier.
+Zero runtime dependencies. The published package is compiled JavaScript plus one
+gzipped data file.

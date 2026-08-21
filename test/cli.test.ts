@@ -345,13 +345,36 @@ describe('friendly command names', () => {
     assert.ok(Array.isArray(JSON.parse(output)));
   });
 
-  test('`key <provider> --key` saves one', async () => {
+  test('`key <provider>` saves one and `key rm` forgets it', async () => {
     await runCli(['key', 'groq', '--key', 'gsk_friendlyname123']);
-    const { output } = await runCli(['auth', 'list', '--json']);
+    const saved = await runCli(['key', '--json']);
     assert.ok(
-      (JSON.parse(output) as { provider: string }[]).some((row) => row.provider === 'groq'),
+      (JSON.parse(saved.output) as { provider: string }[]).some((row) => row.provider === 'groq'),
     );
-    await runCli(['auth', 'rm', 'groq']);
+
+    const removed = await runCli(['key', 'rm', 'groq']);
+    assert.equal(removed.code, 0);
+    const after = await runCli(['key', '--json']);
+    assert.ok(
+      !(JSON.parse(after.output) as { provider: string }[]).some((row) => row.provider === 'groq'),
+    );
+  });
+
+  test('the older names still work', async () => {
+    // `auth` and `use` are no longer listed, but scripts and muscle memory
+    // should not break.
+    const listed = await runCli(['auth', 'list', '--json']);
+    assert.equal(listed.code, 0);
+
+    await runCli(['use', 'openrouter/deepseek/deepseek-chat']);
+    const { output } = await runCli(['claude', '--dry-run', '--json']);
+    assert.equal((JSON.parse(output) as { model: string }).model, 'deepseek/deepseek-chat');
+  });
+
+  test('neither older name is listed in help', async () => {
+    const { output } = await runCli(['help', '--all']);
+    assert.ok(!/^\s+auth\s/m.test(output), '`auth` is still listed');
+    assert.ok(!/^\s+use\s/m.test(output), '`use` is still listed');
   });
 });
 

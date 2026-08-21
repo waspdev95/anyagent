@@ -41,6 +41,12 @@ interface CommandSpec {
   group: Group;
   /** Shown on the short help screen. */
   essential?: boolean;
+  /**
+   * Kept working but not listed: an older spelling of something that now has a
+   * better name. Two visible ways to do one thing is a question nobody should
+   * have to answer.
+   */
+  hidden?: boolean;
 }
 
 const COMMANDS: Record<string, CommandSpec> = {
@@ -67,7 +73,7 @@ const COMMANDS: Record<string, CommandSpec> = {
   key: {
     run: keyCommand,
     summary: 'Save an API key',
-    usage: 'key [<provider>]',
+    usage: 'key [<provider>] | key test <provider> | key rm <provider>',
     group: 'setup',
     essential: true,
   },
@@ -110,15 +116,17 @@ const COMMANDS: Record<string, CommandSpec> = {
   },
   use: {
     run: useCommand,
-    summary: 'Set provider and model in one go',
+    summary: 'Older name for `model`',
     usage: 'use <provider>/<model>',
     group: 'advanced',
+    hidden: true,
   },
   auth: {
     run: authCommand,
-    summary: 'Manage API keys (add, list, remove, test)',
+    summary: 'Older name for `key`',
     usage: 'auth <add|list|rm|test> [provider]',
     group: 'advanced',
+    hidden: true,
   },
   config: {
     run: configCommand,
@@ -283,7 +291,9 @@ export function printHelp(topic?: string, all = false): void {
   }
 
   for (const group of ['run', 'setup', 'browse', 'fix', 'advanced'] as Group[]) {
-    const entries = Object.entries(COMMANDS).filter(([, entry]) => entry.group === group);
+    const entries = Object.entries(COMMANDS).filter(
+      ([, entry]) => entry.group === group && !entry.hidden,
+    );
     if (entries.length === 0) continue;
     out(`  ${color.bold(GROUP_TITLES[group])}`);
     printTable(

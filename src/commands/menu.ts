@@ -95,8 +95,15 @@ async function pick(cli: Cli): Promise<string> {
     { value: `${ACTION_PREFIX}quit`, label: pad('quit', 10) + color.dim('Exit') },
   );
 
+  // On a fresh install, say what is about to happen. After that, get out of
+  // the way - the list is self-explanatory once it has been seen once.
+  const firstRun = !cli.config.model && !cli.config.provider;
+  const title = firstRun
+    ? `  ${color.bold('anyagent')} ${color.dim('- pick one, and I will ask for a key and a model')}`
+    : `  ${color.bold('anyagent')} ${color.dim('- pick what to run')}`;
+
   out();
-  return select(`  ${color.bold('anyagent')} ${color.dim('- pick what to run')}`, items, {
+  return select(title, items, {
     pageSize: 16,
     current: cli.config.lastAgent ?? sorted[0]?.id,
   });
