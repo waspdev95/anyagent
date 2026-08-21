@@ -278,6 +278,17 @@ Read [docs/architecture.md](docs/architecture.md), then
 - **Shell aliases** — what most people have now. This is that, with a model
   catalog, key storage, backups and a compatibility check.
 
+## Documentation
+
+- [Agents](docs/agents.md) — every agent, its protocol, and the compatibility matrix
+- [Providers](docs/providers.md) — all 183, with the Anthropic and Responses endpoint tables
+- [Architecture](docs/architecture.md) — how plan/apply works, and why
+- [Troubleshooting](docs/troubleshooting.md) — the errors people actually hit
+- [Security](SECURITY.md) — where your keys go, precisely
+
+Both reference tables are generated from the registry (`npm run docs`), so they
+cannot drift from the code.
+
 ## Contributing
 
 Issues and pull requests are welcome — especially new agents, new provider

@@ -5,7 +5,9 @@ import path from 'node:path';
 import test, { describe } from 'node:test';
 
 import {
+  findProjectConfig,
   getConfigValue,
+  loadProjectConfig,
   loadUserConfig,
   resolveDefaults,
   saveUserConfig,
@@ -75,6 +77,33 @@ describe('paths', () => {
     const paths = resolvePaths({}, path.join(path.sep, 'home', 'tester'));
     assert.equal(paths.state, path.join(path.sep, 'home', 'tester', '.anyagent'));
     assert.ok(paths.credentials.endsWith('credentials.json'));
+  });
+});
+
+describe('project config discovery', () => {
+  test('does not mistake the user state directory for a project config', async () => {
+    // ~/.anyagent/config.json is anyagent's own global config. Treating it as a
+    // project override would silently outrank per-agent defaults for every
+    // project that lives under the home directory.
+    const home = tempDir();
+    const state = path.join(home, '.anyagent');
+    await writeJson(path.join(state, 'config.json'), { model: 'global-model' });
+    const project = path.join(home, 'code', 'app');
+    fs.mkdirSync(project, { recursive: true });
+
+    assert.equal(await findProjectConfig(project), undefined);
+  });
+
+  test('finds the nearest .anyagent.json walking up', async () => {
+    const root = tempDir();
+    const nested = path.join(root, 'a', 'b');
+    fs.mkdirSync(nested, { recursive: true });
+    const marker = path.join(root, 'a', '.anyagent.json');
+    await writeJson(marker, { model: 'project-model' });
+
+    assert.equal(await findProjectConfig(nested), marker);
+    const loaded = await loadProjectConfig(nested);
+    assert.equal(loaded.config.model, 'project-model');
   });
 });
 

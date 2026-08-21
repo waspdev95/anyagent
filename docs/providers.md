@@ -27,50 +27,50 @@ route was confirmed to exist, `docs` means the vendor publishes it but the host
 authenticates before routing so a probe cannot distinguish it, and `catalog`
 means models.dev already described the provider as Anthropic-native.
 
-| id                       | provider                          | endpoint                                                                  | source  |
-| ------------------------ | --------------------------------- | ------------------------------------------------------------------------- | ------- |
-| `alibaba`                | Alibaba (DashScope)               | https://dashscope-intl.aliyuncs.com/api/v2/apps/claude-code-proxy         | docs    |
-| `anthropic`              | Anthropic                         | https://api.anthropic.com                                                 | docs    |
-| `deepseek`               | DeepSeek                          | https://api.deepseek.com/anthropic                                        | docs    |
-| `freemodel`              | FreeModel                         | https://cc.freemodel.dev/v1                                               | catalog |
-| `kimi-for-coding`        | Kimi For Coding                   | https://api.kimi.com/coding/v1                                            | catalog |
-| `minimax`                | MiniMax (minimax.io)              | https://api.minimax.io/anthropic                                          | probe   |
-| `minimax-cn`             | MiniMax (minimaxi.com)            | https://api.minimaxi.com/anthropic/v1                                     | catalog |
-| `minimax-cn-coding-plan` | MiniMax Token Plan (minimaxi.com) | https://api.minimaxi.com/anthropic/v1                                     | catalog |
-| `minimax-coding-plan`    | MiniMax Token Plan (minimax.io)   | https://api.minimax.io/anthropic/v1                                       | catalog |
-| `moonshotai`             | Moonshot AI                       | https://api.moonshot.ai/anthropic                                         | probe   |
-| `moonshotai-cn`          | Moonshot AI (China)               | https://api.moonshot.cn/anthropic                                         | docs    |
-| `novita-ai`              | NovitaAI                          | https://api.novita.ai/anthropic                                           | probe   |
-| `ollama`                 | Ollama (local)                    | http://127.0.0.1:11434                                                    | catalog |
-| `openrouter`             | OpenRouter                        | https://openrouter.ai/api                                                 | probe   |
-| `siliconflow`            | SiliconFlow                       | https://api.siliconflow.com                                               | probe   |
-| `subconscious`           | Subconscious                      | https://api.subconscious.dev/v1                                           | catalog |
-| `thinkingmachines`       | Thinking Machines                 | https://tinker.thinkingmachines.dev/services/tinker-prod/anthropic/api/v1 | catalog |
-| `xai`                    | xAI                               | https://api.x.ai                                                          | probe   |
-| `zai`                    | Z.ai                              | https://api.z.ai/api/anthropic                                            | docs    |
-| `zai-coding-plan`        | Z.ai Coding Plan                  | https://api.z.ai/api/anthropic                                            | docs    |
-| `zhipuai`                | Zhipu AI                          | https://open.bigmodel.cn/api/anthropic                                    | probe   |
+| id | provider | endpoint | source |
+| --- | --- | --- | --- |
+| `alibaba` | Alibaba (DashScope) | https://dashscope-intl.aliyuncs.com/api/v2/apps/claude-code-proxy | docs |
+| `anthropic` | Anthropic | https://api.anthropic.com | docs |
+| `deepseek` | DeepSeek | https://api.deepseek.com/anthropic | docs |
+| `freemodel` | FreeModel | https://cc.freemodel.dev/v1 | catalog |
+| `kimi-for-coding` | Kimi For Coding | https://api.kimi.com/coding/v1 | catalog |
+| `minimax` | MiniMax (minimax.io) | https://api.minimax.io/anthropic | probe |
+| `minimax-cn` | MiniMax (minimaxi.com) | https://api.minimaxi.com/anthropic/v1 | catalog |
+| `minimax-cn-coding-plan` | MiniMax Token Plan (minimaxi.com) | https://api.minimaxi.com/anthropic/v1 | catalog |
+| `minimax-coding-plan` | MiniMax Token Plan (minimax.io) | https://api.minimax.io/anthropic/v1 | catalog |
+| `moonshotai` | Moonshot AI | https://api.moonshot.ai/anthropic | probe |
+| `moonshotai-cn` | Moonshot AI (China) | https://api.moonshot.cn/anthropic | docs |
+| `novita-ai` | NovitaAI | https://api.novita.ai/anthropic | probe |
+| `ollama` | Ollama (local) | http://127.0.0.1:11434 | catalog |
+| `openrouter` | OpenRouter | https://openrouter.ai/api | probe |
+| `siliconflow` | SiliconFlow | https://api.siliconflow.com | probe |
+| `subconscious` | Subconscious | https://api.subconscious.dev/v1 | catalog |
+| `thinkingmachines` | Thinking Machines | https://tinker.thinkingmachines.dev/services/tinker-prod/anthropic/api/v1 | catalog |
+| `xai` | xAI | https://api.x.ai | probe |
+| `zai` | Z.ai | https://api.z.ai/api/anthropic | docs |
+| `zai-coding-plan` | Z.ai Coding Plan | https://api.z.ai/api/anthropic | docs |
+| `zhipuai` | Zhipu AI | https://open.bigmodel.cn/api/anthropic | probe |
 
 ## OpenAI Responses providers
 
 These serve `/responses`, which is what **Codex** and **Copilot CLI** need.
 Codex removed `wire_api = "chat"`, so a chat-only provider cannot drive it.
 
-| id                 | provider          | endpoint                              | source  |
-| ------------------ | ----------------- | ------------------------------------- | ------- |
-| `deepseek`         | DeepSeek          | https://api.deepseek.com/v1           | docs    |
-| `fireworks-ai`     | Fireworks AI      | https://api.fireworks.ai/inference/v1 | probe   |
-| `groq`             | Groq              | https://api.groq.com/openai/v1        | probe   |
-| `meta`             | Meta              | https://api.meta.ai/v1                | catalog |
-| `moonshotai`       | Moonshot AI       | https://api.moonshot.ai/v1            | probe   |
-| `openai`           | OpenAI            | https://api.openai.com/v1             | catalog |
-| `openrouter`       | OpenRouter        | https://openrouter.ai/api/v1          | probe   |
-| `perplexity-agent` | Perplexity Agent  | https://api.perplexity.ai/v1          | catalog |
-| `togetherai`       | Together AI       | https://api.together.xyz/v1           | probe   |
-| `vercel`           | Vercel AI Gateway | https://ai-gateway.vercel.sh/v1       | probe   |
-| `vivgrid`          | Vivgrid           | https://api.vivgrid.com/v1            | catalog |
-| `xai`              | xAI               | https://api.x.ai/v1                   | probe   |
-| `zai`              | Z.ai              | https://api.z.ai/api/paas/v4          | docs    |
+| id | provider | endpoint | source |
+| --- | --- | --- | --- |
+| `deepseek` | DeepSeek | https://api.deepseek.com/v1 | docs |
+| `fireworks-ai` | Fireworks AI | https://api.fireworks.ai/inference/v1 | probe |
+| `groq` | Groq | https://api.groq.com/openai/v1 | probe |
+| `meta` | Meta | https://api.meta.ai/v1 | catalog |
+| `moonshotai` | Moonshot AI | https://api.moonshot.ai/v1 | probe |
+| `openai` | OpenAI | https://api.openai.com/v1 | catalog |
+| `openrouter` | OpenRouter | https://openrouter.ai/api/v1 | probe |
+| `perplexity-agent` | Perplexity Agent | https://api.perplexity.ai/v1 | catalog |
+| `togetherai` | Together AI | https://api.together.xyz/v1 | probe |
+| `vercel` | Vercel AI Gateway | https://ai-gateway.vercel.sh/v1 | probe |
+| `vivgrid` | Vivgrid | https://api.vivgrid.com/v1 | catalog |
+| `xai` | xAI | https://api.x.ai/v1 | probe |
+| `zai` | Z.ai | https://api.z.ai/api/paas/v4 | docs |
 
 ## Everything else
 
@@ -79,24 +79,24 @@ OpenCode, Droid, DeepSeek Harness, Pi, OpenClaw, Hermes, Cline, Qwen Code and Po
 
 ## Local runtimes
 
-| id         | endpoint                   | notes                                                                       |
-| ---------- | -------------------------- | --------------------------------------------------------------------------- |
-| `ollama`   | `http://127.0.0.1:11434`   | serves both OpenAI- and Anthropic-compatible APIs, so it drives every agent |
-| `lmstudio` | `http://127.0.0.1:1234/v1` | OpenAI-compatible                                                           |
-| `llamacpp` | `http://127.0.0.1:8080/v1` | OpenAI-compatible                                                           |
-| `vllm`     | `http://127.0.0.1:8000/v1` | OpenAI-compatible                                                           |
+| id | endpoint | notes |
+| --- | --- | --- |
+| `ollama` | `http://127.0.0.1:11434` | serves both OpenAI- and Anthropic-compatible APIs, so it drives every agent |
+| `lmstudio` | `http://127.0.0.1:1234/v1` | OpenAI-compatible |
+| `llamacpp` | `http://127.0.0.1:8080/v1` | OpenAI-compatible |
+| `vllm` | `http://127.0.0.1:8000/v1` | OpenAI-compatible |
 
 No key is required for any of them.
 
 ## Providers anyagent cannot drive
 
-| id                         | reason                                                        |
-| -------------------------- | ------------------------------------------------------------- |
-| `google-vertex`            | Vertex AI uses Google application default credentials.        |
-| `google-vertex-anthropic`  | Vertex AI uses Google application default credentials.        |
-| `amazon-bedrock`           | Bedrock uses SigV4 request signing, not bearer tokens.        |
+| id | reason |
+| --- | --- |
+| `google-vertex` | Vertex AI uses Google application default credentials. |
+| `google-vertex-anthropic` | Vertex AI uses Google application default credentials. |
+| `amazon-bedrock` | Bedrock uses SigV4 request signing, not bearer tokens. |
 | `azure-cognitive-services` | Azure OpenAI needs a per-deployment endpoint; use --base-url. |
-| `azure`                    | Azure OpenAI needs a per-deployment endpoint; use --base-url. |
+| `azure` | Azure OpenAI needs a per-deployment endpoint; use --base-url. |
 
 These authenticate with signed requests or cloud credentials rather than a bearer
 token, which a base URL cannot express. Use the vendor's own gateway, or point

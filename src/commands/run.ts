@@ -90,7 +90,7 @@ export async function runCommand(cli: Cli, argv: string[]): Promise<number> {
   const warning = keyLooksWrong(provider, credential.key);
   if (warning && !provider.keyless) warn(warning);
 
-  const modelId = defaults.model ?? (await chooseModel(cli, catalog, provider, defaults.model));
+  const modelId = await chooseModel(cli, catalog, provider, defaults.model);
 
   const target = buildTarget({
     agent,

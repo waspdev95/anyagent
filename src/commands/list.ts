@@ -23,7 +23,11 @@ import {
 } from '../ui.js';
 
 export const LS_FLAGS: FlagSpecs = {
-  all: { type: 'boolean', short: 'a', description: 'Include agents that are not installed' },
+  installed: {
+    type: 'boolean',
+    short: 'i',
+    description: 'Only agents that are already installed',
+  },
   versions: { type: 'boolean', description: 'Query each installed agent for its version' },
 };
 
@@ -53,7 +57,9 @@ export async function lsCommand(cli: Cli, argv: string[]): Promise<number> {
     }),
   );
 
-  const visible = flags.all === true ? rows : rows.filter((row) => row.installed || true);
+  // Everything is listed by default: the list is short, and seeing what else
+  // exists is most of the point.
+  const visible = flags.installed === true ? rows.filter((row) => row.installed) : rows;
 
   if (cli.json) {
     printJson(visible);

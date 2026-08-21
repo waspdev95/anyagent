@@ -30,7 +30,11 @@ interface CommandSpec {
 
 const COMMANDS: Record<string, CommandSpec> = {
   run: { run: runCommand, summary: 'Launch an agent', usage: 'run <agent> [options] [-- args]' },
-  ls: { run: lsCommand, summary: 'List agents and their status', usage: 'ls [--all]' },
+  ls: {
+    run: lsCommand,
+    summary: 'List agents and their status',
+    usage: 'ls [--installed] [--versions]',
+  },
   providers: {
     run: providersCommand,
     summary: 'Browse model providers',

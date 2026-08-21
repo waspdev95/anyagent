@@ -5,20 +5,20 @@
 Every agent anyagent can launch, the protocol it speaks, and how many of the
 183 catalogued providers can drive it.
 
-| id         | agent                                                               | speaks                                      | providers | description                                          |
-| ---------- | ------------------------------------------------------------------- | ------------------------------------------- | --------- | ---------------------------------------------------- |
-| `claude`   | [Claude Code](https://code.claude.com/docs)                         | Anthropic Messages                          | 21        | Anthropic's coding agent, with subagents and hooks   |
-| `codex`    | [Codex](https://developers.openai.com/codex/cli/)                   | OpenAI Responses                            | 13        | OpenAI's coding agent for the terminal               |
-| `opencode` | [OpenCode](https://opencode.ai)                                     | OpenAI Chat Completions                     | 175       | Open-source terminal coding agent                    |
-| `copilot`  | [Copilot CLI](https://github.com/features/copilot/cli)              | OpenAI Responses                            | 13        | GitHub's coding agent for the terminal               |
-| `droid`    | [Droid](https://docs.factory.ai/cli)                                | OpenAI Chat Completions, Anthropic Messages | 183       | Factory's coding agent for terminal and IDE          |
-| `dsh`      | [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) | OpenAI Chat Completions                     | 175       | DeepSeek's open-source agent harness                 |
-| `pi`       | [Pi](https://github.com/earendil-works/pi)                          | OpenAI Chat Completions                     | 175       | Minimal agent toolkit with a plugin system           |
-| `openclaw` | [OpenClaw](https://docs.openclaw.ai)                                | OpenAI Chat Completions, Anthropic Messages | 183       | Personal AI agent with a large skill library         |
-| `hermes`   | [Hermes](https://hermes-agent.nousresearch.com/docs)                | OpenAI Chat Completions                     | 175       | Self-improving agent by Nous Research                |
-| `cline`    | [Cline](https://cline.bot)                                          | OpenAI Chat Completions                     | 175       | Autonomous coding agent with parallel task execution |
-| `qwen`     | [Qwen Code](https://qwenlm.github.io/qwen-code-docs/)               | OpenAI Chat Completions                     | 175       | Alibaba's coding agent, forked from Gemini CLI       |
-| `pool`     | [Pool](https://github.com/poolsideai/pool)                          | OpenAI Chat Completions                     | 175       | Poolside's software agent                            |
+| id | agent | speaks | providers | description |
+| --- | --- | --- | --- | --- |
+| `claude` | [Claude Code](https://code.claude.com/docs) | Anthropic Messages | 21 | Anthropic's coding agent, with subagents and hooks |
+| `codex` | [Codex](https://developers.openai.com/codex/cli/) | OpenAI Responses | 13 | OpenAI's coding agent for the terminal |
+| `opencode` | [OpenCode](https://opencode.ai) | OpenAI Chat Completions | 175 | Open-source terminal coding agent |
+| `copilot` | [Copilot CLI](https://github.com/features/copilot/cli) | OpenAI Responses | 13 | GitHub's coding agent for the terminal |
+| `droid` | [Droid](https://docs.factory.ai/cli) | OpenAI Chat Completions, Anthropic Messages | 183 | Factory's coding agent for terminal and IDE |
+| `dsh` | [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) | OpenAI Chat Completions | 175 | DeepSeek's open-source agent harness |
+| `pi` | [Pi](https://github.com/earendil-works/pi) | OpenAI Chat Completions | 175 | Minimal agent toolkit with a plugin system |
+| `openclaw` | [OpenClaw](https://docs.openclaw.ai) | OpenAI Chat Completions, Anthropic Messages | 183 | Personal AI agent with a large skill library |
+| `hermes` | [Hermes](https://hermes-agent.nousresearch.com/docs) | OpenAI Chat Completions | 175 | Self-improving agent by Nous Research |
+| `cline` | [Cline](https://cline.bot) | OpenAI Chat Completions | 175 | Autonomous coding agent with parallel task execution |
+| `qwen` | [Qwen Code](https://qwenlm.github.io/qwen-code-docs/) | OpenAI Chat Completions | 175 | Alibaba's coding agent, forked from Gemini CLI |
+| `pool` | [Pool](https://github.com/poolsideai/pool) | OpenAI Chat Completions | 175 | Poolside's software agent |
 
 Aliases: `claude` (`claude-code`, `cc`), `codex` (`codex-cli`), `copilot` (`copilot-cli`), `dsh` (`deepseek-harness`), `openclaw` (`clawdbot`, `moltbot`), `qwen` (`qwen-code`), `pool` (`poolside`).
 
@@ -28,20 +28,20 @@ An agent can only use a provider that speaks its protocol. Run
 `anyagent compat` for this table against your live catalog, or
 `anyagent providers --agent <id>` for the full list.
 
-| agent      | openrouter | deepseek | zai | moonshotai | groq | openai | anthropic | ollama |
-| ---------- | ---------- | -------- | --- | ---------- | ---- | ------ | --------- | ------ |
-| `claude`   | yes        | yes      | yes | yes        | -    | -      | yes       | yes    |
-| `codex`    | yes        | yes      | yes | yes        | yes  | yes    | -         | -      |
-| `opencode` | yes        | yes      | yes | yes        | yes  | yes    | -         | yes    |
-| `copilot`  | yes        | yes      | yes | yes        | yes  | yes    | -         | -      |
-| `droid`    | yes        | yes      | yes | yes        | yes  | yes    | yes       | yes    |
-| `dsh`      | yes        | yes      | yes | yes        | yes  | yes    | -         | yes    |
-| `pi`       | yes        | yes      | yes | yes        | yes  | yes    | -         | yes    |
-| `openclaw` | yes        | yes      | yes | yes        | yes  | yes    | yes       | yes    |
-| `hermes`   | yes        | yes      | yes | yes        | yes  | yes    | -         | yes    |
-| `cline`    | yes        | yes      | yes | yes        | yes  | yes    | -         | yes    |
-| `qwen`     | yes        | yes      | yes | yes        | yes  | yes    | -         | yes    |
-| `pool`     | yes        | yes      | yes | yes        | yes  | yes    | -         | yes    |
+| agent | openrouter | deepseek | zai | moonshotai | groq | openai | anthropic | ollama |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `claude` | yes | yes | yes | yes | - | - | yes | yes |
+| `codex` | yes | yes | yes | yes | yes | yes | - | - |
+| `opencode` | yes | yes | yes | yes | yes | yes | - | yes |
+| `copilot` | yes | yes | yes | yes | yes | yes | - | - |
+| `droid` | yes | yes | yes | yes | yes | yes | yes | yes |
+| `dsh` | yes | yes | yes | yes | yes | yes | - | yes |
+| `pi` | yes | yes | yes | yes | yes | yes | - | yes |
+| `openclaw` | yes | yes | yes | yes | yes | yes | yes | yes |
+| `hermes` | yes | yes | yes | yes | yes | yes | - | yes |
+| `cline` | yes | yes | yes | yes | yes | yes | - | yes |
+| `qwen` | yes | yes | yes | yes | yes | yes | - | yes |
+| `pool` | yes | yes | yes | yes | yes | yes | - | yes |
 
 ## Installing
 

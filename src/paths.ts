@@ -47,5 +47,14 @@ function stateDir(env: NodeJS.ProcessEnv, home: string): string {
   return path.join(home, '.anyagent');
 }
 
-/** Per-project overrides, discovered by walking up from `cwd`. */
-export const PROJECT_CONFIG_NAMES = ['.anyagent.json', '.anyagent/config.json'] as const;
+/**
+ * Per-project overrides, discovered by walking up from `cwd`.
+ *
+ * Deliberately just one name. `.anyagent/config.json` would look like a
+ * reasonable second option, but it collides with anyagent's own state directory:
+ * for any project under the home directory the upward walk reaches
+ * `~/.anyagent/config.json` and mistakes the user's global settings for a
+ * project override - which then outranks their per-agent defaults. One
+ * unambiguous marker is worth more than a second convention.
+ */
+export const PROJECT_CONFIG_NAMES = ['.anyagent.json'] as const;
