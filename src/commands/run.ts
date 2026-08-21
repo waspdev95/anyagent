@@ -107,15 +107,20 @@ export async function runCommand(cli: Cli, argv: string[]): Promise<number> {
     success(`Saved ${provider.id}/${target.model.id} as the default for ${agent.name}.`);
   }
 
-  const binary = locate(agent, cli.home, cli.platform);
-  const resolvedBinary = binary ?? (await installAgent(cli, agent));
-  if (!resolvedBinary) throw notInstalled(agent);
+  // Inspecting a launch must not require the agent to be installed - looking
+  // before installing is exactly what these two flags are for.
+  const inspecting = flags['dry-run'] === true || flags['print-env'] === true;
+
+  const located = locate(agent, cli.home, cli.platform);
+  const binary = located ?? (inspecting ? undefined : await installAgent(cli, agent));
+  if (!binary && !inspecting) throw notInstalled(agent);
 
   // Only agents whose config depends on their release ask for a version, and
   // the answer is cached: this stays off the critical path of a launch.
-  const agentVersion = agent.versionArgs
-    ? await detectVersion(agent, resolvedBinary, cli.paths.versionCache)
-    : undefined;
+  const agentVersion =
+    binary && agent.versionArgs
+      ? await detectVersion(agent, binary, cli.paths.versionCache)
+      : undefined;
   const context: PlanContext = {
     target,
     passthrough: [...defaults.args, ...parsed.passthrough],
@@ -139,15 +144,18 @@ export async function runCommand(cli: Cli, argv: string[]): Promise<number> {
   }
 
   if (flags['dry-run'] === true) {
-    printPlan(cli, agent, target, plan, resolvedBinary);
+    printPlan(cli, agent, target, plan, binary);
     return 0;
   }
+
+  // Past the inspection branches, a binary is required.
+  if (!binary) throw notInstalled(agent);
 
   await applyFiles(agent, plan, { paths: cli.paths, platform: cli.platform });
 
   printBanner(agent, target, plan, credential.origin);
 
-  const result = await launch(plan, resolvedBinary, {
+  const result = await launch(plan, binary, {
     paths: cli.paths,
     env: cli.env,
     cwd: cli.cwd,
@@ -214,7 +222,13 @@ export function displayValue(name: string, value: string): string {
   return value.includes('\n') ? JSON.stringify(value) : value;
 }
 
-function printPlan(cli: Cli, agent: Agent, target: Target, plan: LaunchPlan, binary: string): void {
+function printPlan(
+  cli: Cli,
+  agent: Agent,
+  target: Target,
+  plan: LaunchPlan,
+  binary: string | undefined,
+): void {
   const summary = {
     agent: agent.id,
     provider: target.provider.id,
@@ -222,7 +236,8 @@ function printPlan(cli: Cli, agent: Agent, target: Target, plan: LaunchPlan, bin
     baseUrl: target.baseUrl,
     model: target.model.id,
     smallModel: target.smallModel?.id,
-    binary,
+    binary: binary ?? null,
+    installed: Boolean(binary),
     command: [plan.command.file, ...plan.command.args],
     env: Object.fromEntries(
       Object.entries(plan.env).map(([name, value]) => [name, displayValue(name, value)]),
@@ -239,7 +254,8 @@ function printPlan(cli: Cli, agent: Agent, target: Target, plan: LaunchPlan, bin
   out();
   out(color.bold(`  ${agent.name} would launch as:`));
   out();
-  note(`${binary} ${plan.command.args.join(' ')}`);
+  note(`${binary ?? plan.command.file} ${plan.command.args.join(' ')}`);
+  if (!binary) note(color.yellow(`${agent.name} is not installed yet.`));
   out();
   out(color.bold('  environment'));
   for (const [name, value] of Object.entries(summary.env)) note(`${name}=${value}`);

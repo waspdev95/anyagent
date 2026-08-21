@@ -164,6 +164,40 @@ describe('argument forwarding', () => {
   });
 });
 
+describe('inspecting a launch', () => {
+  test('--dry-run works for an agent that is not installed', async () => {
+    // Looking before installing is exactly what this flag is for, and CI has
+    // none of these agents on PATH.
+    const { code, output } = await runCli([
+      'hermes',
+      '--provider',
+      'openrouter',
+      '-m',
+      'deepseek/deepseek-chat',
+      '--dry-run',
+      '--json',
+    ]);
+    assert.equal(code, 0);
+    const plan = JSON.parse(output) as { agent: string; installed: boolean; binary: string | null };
+    assert.equal(plan.agent, 'hermes');
+    assert.equal(typeof plan.installed, 'boolean');
+  });
+
+  test('--print-env works without the agent installed', async () => {
+    const { code, output } = await runCli([
+      'hermes',
+      '--provider',
+      'openrouter',
+      '-m',
+      'deepseek/deepseek-chat',
+      '--print-env',
+      '--json',
+    ]);
+    assert.equal(code, 0);
+    assert.ok(JSON.parse(output) as Record<string, string>);
+  });
+});
+
 describe('errors', () => {
   test('an incompatible pairing explains itself and suggests alternatives', async () => {
     await assert.rejects(
