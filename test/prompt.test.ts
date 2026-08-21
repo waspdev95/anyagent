@@ -135,6 +135,35 @@ describe('select', () => {
     }
   });
 
+  test('stdin is released when the picker finishes', async () => {
+    // The bug this guards: after a menu, readline's decoder keeps stdin
+    // flowing, so the agent launched next has to share every keystroke with
+    // this process and its arrow keys stop working.
+    const fake = terminal();
+    type(fake, [KEY.enter]);
+    await select('pick', ITEMS, { input: fake.input, output: fake.output });
+
+    assert.equal(fake.input.listenerCount('keypress'), 0, 'a keypress listener survived');
+    assert.equal(fake.input.isPaused(), true, 'stdin is still flowing');
+  });
+
+  test('stdin is released when the picker is cancelled', async () => {
+    const fake = terminal();
+    type(fake, [KEY.escape]);
+    await select('pick', ITEMS, { input: fake.input, output: fake.output }).catch(() => undefined);
+    assert.equal(fake.input.isPaused(), true);
+  });
+
+  test('the list is erased on the way out', async () => {
+    // Whatever runs next draws its own screen; it should not appear underneath
+    // a menu that has already been answered.
+    const fake = terminal();
+    type(fake, [KEY.enter]);
+    await select('pick', ITEMS, { input: fake.input, output: fake.output });
+    const ESC_SEQ = String.fromCharCode(27);
+    assert.ok(fake.rendered().includes(`${ESC_SEQ}[0J`), 'the picker never cleared what it drew');
+  });
+
   test('an empty list is refused instead of hanging', async () => {
     const fake = terminal();
     await assert.rejects(select('pick', [], { input: fake.input, output: fake.output }));

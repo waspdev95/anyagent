@@ -65,9 +65,14 @@ async function pick(cli: Cli): Promise<string> {
     return AGENTS.indexOf(a) - AGENTS.indexOf(b);
   });
 
+  // Both columns are padded to the widest entry, so the status column lines up
+  // instead of stepping in and out with the length of each product name.
+  const idWidth = Math.max(...AGENTS.map((agent) => agent.id.length), 8) + 2;
+  const nameWidth = Math.max(...AGENTS.map((agent) => agent.name.length)) + 2;
+
   const items: SelectItem[] = sorted.map((agent) => ({
     value: agent.id,
-    label: pad(agent.id, 10) + color.dim(agent.name),
+    label: pad(agent.id, idWidth) + color.dim(pad(agent.name, nameWidth)),
     detail: status(cli, agent, installed.get(agent.id) === true),
     keywords: `${agent.name} ${agent.description}`,
   }));
@@ -76,23 +81,23 @@ async function pick(cli: Cli): Promise<string> {
     ? `${cli.config.provider ?? '?'} / ${cli.config.model}`
     : 'not set yet';
 
+  const action = (name: string, description: string): string =>
+    pad(name, idWidth) + color.dim(pad(description, nameWidth));
+
   items.push(
     { value: 'sep', label: '', separator: true },
     {
       value: `${ACTION_PREFIX}model`,
-      label: pad('model', 10) + color.dim('Choose the AI model'),
+      label: action('model', 'Choose the AI model'),
       detail: current,
     },
     {
       value: `${ACTION_PREFIX}key`,
-      label: pad('key', 10) + color.dim('Add an API key'),
+      label: action('key', 'Add an API key'),
       detail: `${(await cli.store.list()).length} saved`,
     },
-    {
-      value: `${ACTION_PREFIX}check`,
-      label: pad('check', 10) + color.dim('Check my setup'),
-    },
-    { value: `${ACTION_PREFIX}quit`, label: pad('quit', 10) + color.dim('Exit') },
+    { value: `${ACTION_PREFIX}check`, label: action('check', 'Check my setup') },
+    { value: `${ACTION_PREFIX}quit`, label: action('quit', 'Exit') },
   );
 
   // On a fresh install, say what is about to happen. After that, get out of
@@ -104,7 +109,9 @@ async function pick(cli: Cli): Promise<string> {
 
   out();
   return select(title, items, {
-    pageSize: 16,
+    // The list is short enough to show whole on a normal terminal; only scroll
+    // when the window genuinely cannot fit it.
+    pageSize: items.length,
     current: cli.config.lastAgent ?? sorted[0]?.id,
   });
 }

@@ -94,6 +94,29 @@ function ask(query: string, streams: PromptOptions, mask = false): Promise<strin
   });
 }
 
+/**
+ * Give the terminal back.
+ *
+ * `readline.emitKeypressEvents` installs a `data` handler on stdin that stays
+ * attached for the life of the process - removing the `keypress` listener does
+ * not remove it, and stdin stays in flowing mode. That is fine until the next
+ * thing to run is an agent with its own full-screen prompt: both processes are
+ * then reading the same terminal, and keystrokes get split between them. Arrow
+ * keys stop working and "1. Yes / 2. No" refuses to move.
+ *
+ * Pausing stdin stops this process from consuming input. The child inherits the
+ * file descriptor directly, so it gets every keystroke. Any later prompt in this
+ * process resumes stdin on its own.
+ */
+export function releaseInput(input: NodeJS.ReadStream, previousRawMode = false): void {
+  try {
+    if (input.isTTY) input.setRawMode(previousRawMode);
+  } catch {
+    // A stream that cannot leave raw mode is not worth crashing over.
+  }
+  input.pause();
+}
+
 export interface SelectItem {
   value: string;
   label: string;
@@ -209,8 +232,11 @@ export async function select(
   return new Promise<string>((resolve, reject) => {
     const finish = (fn: () => void): void => {
       input.off('keypress', onKeypress);
-      if (input.isTTY) input.setRawMode(wasRaw);
+      // Erase the list. What comes next - an agent's own full-screen UI - should
+      // start on a clean screen, not underneath a menu that is already answered.
+      if (drawnLines > 0) output.write(`${ESC}[${drawnLines}A${ESC}[0J`);
       output.write(`${ESC}[?25h`);
+      releaseInput(input, wasRaw);
       fn();
     };
 

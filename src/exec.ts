@@ -217,6 +217,16 @@ export function run(command: Command, options: RunOptions = {}): Promise<RunResu
   const spawnFn = options.spawnImpl ?? spawn;
   const platform = options.platform ?? process.platform;
 
+  // Hand the terminal over before the child starts.
+  //
+  // Agents draw their own full-screen prompts. If this process is still reading
+  // stdin - which it is, after any menu or prompt, because readline's keypress
+  // decoder never detaches - then two processes race for every keystroke and the
+  // child's arrow keys stop working. Pausing here is unconditional and cheap: it
+  // costs nothing when no prompt ran, and it is the only thing standing between
+  // a working agent and a stuck one.
+  releaseTerminal();
+
   const child: ChildProcess = spawnFn(command.file, command.args, {
     stdio: 'inherit',
     env: options.env ?? process.env,
@@ -248,6 +258,21 @@ export function run(command: Command, options: RunOptions = {}): Promise<RunResu
     process.off('SIGINT', onInterrupt);
     process.off('SIGTERM', onTerminate);
   }
+}
+
+/**
+ * Stop reading stdin in this process so a child can own the terminal.
+ *
+ * `stdio: 'inherit'` gives the child the same file descriptor, so it receives
+ * every keystroke once this process stops competing for them.
+ */
+export function releaseTerminal(input: NodeJS.ReadStream = process.stdin): void {
+  try {
+    if (input.isTTY) input.setRawMode(false);
+  } catch {
+    // Not every stream can leave raw mode; that is not worth crashing over.
+  }
+  input.pause();
 }
 
 const SIGNAL_NUMBERS: Record<string, number> = { SIGINT: 2, SIGQUIT: 3, SIGKILL: 9, SIGTERM: 15 };

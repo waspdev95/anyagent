@@ -1,7 +1,17 @@
 import assert from 'node:assert/strict';
 import test, { describe } from 'node:test';
 
-import { buildCommand, commonBinPaths, quoteForCmd, which } from '../src/exec.js';
+import type { spawn as spawnFn } from 'node:child_process';
+import { PassThrough } from 'node:stream';
+
+import {
+  buildCommand,
+  commonBinPaths,
+  quoteForCmd,
+  releaseTerminal,
+  run,
+  which,
+} from '../src/exec.js';
 
 describe('which', () => {
   const files = new Set([
@@ -135,5 +145,47 @@ describe('commonBinPaths', () => {
     const posix = commonBinPaths('/home/tester', 'linux');
     assert.ok(posix.some((entry) => entry.endsWith('.local/bin') || entry.endsWith('.local\\bin')));
     assert.ok(posix.includes('/opt/homebrew/bin'));
+  });
+});
+
+describe('run', () => {
+  test('stops reading stdin before the child starts', () => {
+    // Two processes reading one terminal is how an agent's own prompt ends up
+    // ignoring arrow keys. The parent has to let go first.
+    const input = new PassThrough();
+    Object.assign(input, { isTTY: true, setRawMode: () => input });
+    input.resume();
+    assert.equal(input.isPaused(), false);
+
+    releaseTerminal(input as unknown as NodeJS.ReadStream);
+    assert.equal(input.isPaused(), true);
+  });
+
+  test('release is harmless on a stream that is not a terminal', () => {
+    const input = new PassThrough() as unknown as NodeJS.ReadStream;
+    assert.doesNotThrow(() => releaseTerminal(input));
+  });
+
+  test('inherits stdio so the child owns the terminal', async () => {
+    const calls: { options: { stdio?: unknown } }[] = [];
+    const fakeSpawn = ((_file: string, _args: string[], options: { stdio?: unknown }) => {
+      calls.push({ options });
+      const child = new (class extends PassThrough {
+        killed = false;
+        kill(): boolean {
+          return true;
+        }
+      })();
+      setImmediate(() => child.emit('close', 0, null));
+      return child;
+    }) as unknown as typeof spawnFn;
+
+    const result = await run(
+      { file: 'agent', args: [], viaShell: false },
+      { spawnImpl: fakeSpawn, platform: 'linux' },
+    );
+
+    assert.equal(result.code, 0);
+    assert.equal(calls[0]?.options.stdio, 'inherit');
   });
 });
