@@ -1,0 +1,44 @@
+name: Bug report
+description: Something does not work
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Both commands below mask credentials, so their output is safe to paste.
+
+  - type: textarea
+    id: command
+    attributes:
+      label: What did you run?
+      placeholder: anyagent claude --provider openrouter -m deepseek/deepseek-chat
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect, and what happened instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Output of `anyagent doctor`
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: dryrun
+    attributes:
+      label: Output of the same command with `--dry-run`
+      render: shell
+
+  - type: input
+    id: agent-version
+    attributes:
+      label: Agent version
+      description: e.g. `codex --version`. Integrations are version-sensitive.

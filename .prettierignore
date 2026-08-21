@@ -1,0 +1,5 @@
+dist
+.test-out
+node_modules
+src/data/*.gz
+package-lock.json

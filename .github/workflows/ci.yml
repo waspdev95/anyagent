@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: ${{ matrix.os }} / node ${{ matrix.node }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # A launcher that spawns other programs has to be tested on every
+        # platform it claims to support - Windows path and quoting rules are
+        # where this kind of tool actually breaks.
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node: ['20', '22', '24']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Format
+        run: npm run format:check
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Smoke test the built CLI
+        shell: bash
+        env:
+          ANYAGENT_CATALOG_OFFLINE: '1'
+          ANYAGENT_OPENROUTER_API_KEY: sk-or-v1-cikey0000000000000000
+        run: |
+          node dist/cli.js --version
+          node dist/cli.js ls --json > /dev/null
+          node dist/cli.js compat --json > /dev/null
+          node dist/cli.js providers --agent claude --json > /dev/null
+          node dist/cli.js claude --provider openrouter -m deepseek/deepseek-chat --dry-run --json > /dev/null
+          node dist/cli.js doctor --json > /dev/null
+
+  package:
+    name: Package contents
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Verify the tarball is self-contained
+        run: |
+          npm pack --dry-run
+          # The bundled catalog is what makes an offline install work.
+          npm pack --json | grep -q 'dist/data/catalog.snapshot.json.gz'
+      - name: Verify there are no runtime dependencies
+        run: |
+          test "$(node -p "Object.keys(require('./package.json').dependencies ?? {}).length")" -eq 0

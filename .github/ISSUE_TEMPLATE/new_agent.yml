@@ -1,0 +1,42 @@
+name: Add an agent
+description: Support another coding agent
+labels: [agent]
+body:
+  - type: input
+    id: name
+    attributes:
+      label: Agent name and homepage
+    validations:
+      required: true
+
+  - type: input
+    id: install
+    attributes:
+      label: Install command
+      placeholder: npm install -g example-agent
+
+  - type: dropdown
+    id: protocol
+    attributes:
+      label: Which API does it speak?
+      multiple: true
+      options:
+        - Anthropic Messages
+        - OpenAI Chat Completions
+        - OpenAI Responses
+        - Something else / not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: configuration
+    attributes:
+      label: How is a custom endpoint configured?
+      description: |
+        Environment variables, a config file and its path, or a command-line flag.
+        A link to the vendor's documentation is ideal. anyagent prefers, in order:
+        environment variables, an inline config variable, a config layer passed as
+        a flag, an isolated profile directory, and only then merging the user's
+        own config file.
+    validations:
+      required: true
