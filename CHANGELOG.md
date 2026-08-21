@@ -7,8 +7,8 @@ Notable changes, newest first. This project follows
 
 ## [0.1.1] - 2026-08-21
 
-- Published as `@anyagenthq/cli`; the npm badge pointed at a name that does not
-  exist. The command is still `anyagent`.
+- Published as `@waspdev95/anyagent`, matching the GitHub path. The command is
+  still `anyagent`.
 - Documentation examples name current models (`deepseek/deepseek-v4-pro`,
   `openai/gpt-5.6-sol`, `moonshotai/kimi-k3`) instead of superseded ones.
 - Bundled catalog snapshot refreshed: 7,230 models.

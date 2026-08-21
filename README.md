@@ -4,7 +4,7 @@
 
 **Pick a provider, pick a model, run your coding agent.**
 
-[![npm](https://img.shields.io/npm/v/%40anyagenthq%2Fcli?color=%230b7285&label=npm)](https://www.npmjs.com/package/@anyagenthq/cli)
+[![npm](https://img.shields.io/npm/v/%40waspdev95%2Fanyagent?color=%230b7285&label=npm)](https://www.npmjs.com/package/@waspdev95/anyagent)
 [![CI](https://github.com/waspdev95/anyagent/actions/workflows/ci.yml/badge.svg)](https://github.com/waspdev95/anyagent/actions/workflows/ci.yml)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
@@ -15,7 +15,7 @@ local Ollama, or anywhere else. Each of them has its own way of pointing
 somewhere else. This is one command for all of them.
 
 ```bash
-npm install -g @anyagenthq/cli
+npm install -g @waspdev95/anyagent
 anyagent
 ```
 

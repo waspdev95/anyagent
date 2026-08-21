@@ -69,7 +69,7 @@ Three sources, in priority order:
 
 Launching an agent never blocks on the network. The bundled snapshot is a trimmed,
 gzipped copy of the upstream catalog — about 150 KB for 7,000 models — so a fresh
-`npm install -g @anyagenthq/cli` on a plane still works.
+`npm install -g @waspdev95/anyagent` on a plane still works.
 
 ### The overlay
 
