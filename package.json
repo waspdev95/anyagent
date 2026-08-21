@@ -44,8 +44,8 @@
   "scripts": {
     "build": "node scripts/clean.mjs dist && tsc -p tsconfig.build.json && node scripts/postbuild.mjs",
     "dev": "node --experimental-strip-types src/cli.ts",
-    "test": "node scripts/clean.mjs .test-out && tsc -p tsconfig.test.json && node scripts/copy-data.mjs .test-out/src/data && node --test \".test-out/test/*.test.js\"",
-    "test:watch": "node --test --watch \".test-out/test/*.test.js\"",
+    "test": "node scripts/clean.mjs .test-out && tsc -p tsconfig.test.json && node scripts/copy-data.mjs .test-out/src/data && node scripts/test.mjs",
+    "test:watch": "node scripts/test.mjs --watch",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src test scripts",
     "format": "prettier --write \"**/*.{ts,mjs,json,md,yml}\"",
