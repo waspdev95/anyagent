@@ -7,7 +7,7 @@ ships a release.
 ## Getting set up
 
 ```bash
-git clone https://github.com/anyagent/anyagent
+git clone https://github.com/waspdev95/anyagent
 cd anyagent
 npm install
 npm run verify      # typecheck + lint + format check + tests + build

@@ -213,7 +213,7 @@ function printHelp(topic?: string): void {
     false,
   );
   out();
-  out(`  ${color.dim('Docs: https://github.com/anyagent/anyagent')}`);
+  out(`  ${color.dim('Docs: https://github.com/waspdev95/anyagent')}`);
   out();
 }
 
@@ -249,7 +249,7 @@ export function reportError(error: unknown): number {
   err();
   err(
     color.dim(
-      `  ${symbols.bullet} Please report this: https://github.com/anyagent/anyagent/issues`,
+      `  ${symbols.bullet} Please report this: https://github.com/waspdev95/anyagent/issues`,
     ),
   );
   err();

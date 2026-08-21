@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
   - name: Question or idea
-    url: https://github.com/anyagent/anyagent/discussions
+    url: https://github.com/waspdev95/anyagent/discussions
     about: Ask about usage, or float an idea before opening a PR.
   - name: Security vulnerability
-    url: https://github.com/anyagent/anyagent/security/advisories/new
+    url: https://github.com/waspdev95/anyagent/security/advisories/new
     about: Report privately. Please do not open a public issue.

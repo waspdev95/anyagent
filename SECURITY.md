@@ -3,7 +3,7 @@
 ## Reporting a vulnerability
 
 Please report security issues privately through
-[GitHub Security Advisories](https://github.com/anyagent/anyagent/security/advisories/new)
+[GitHub Security Advisories](https://github.com/waspdev95/anyagent/security/advisories/new)
 rather than a public issue. We aim to acknowledge within 72 hours.
 
 ## What anyagent does with your credentials

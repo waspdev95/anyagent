@@ -17,11 +17,11 @@
     "coding-agent",
     "model-router"
   ],
-  "homepage": "https://github.com/anyagent/anyagent#readme",
-  "bugs": "https://github.com/anyagent/anyagent/issues",
+  "homepage": "https://github.com/waspdev95/anyagent#readme",
+  "bugs": "https://github.com/waspdev95/anyagent/issues",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/anyagent/anyagent.git"
+    "url": "git+https://github.com/waspdev95/anyagent.git"
   },
   "license": "MIT",
   "author": "anyagent contributors",

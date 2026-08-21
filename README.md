@@ -8,7 +8,7 @@ Run Claude Code, Codex, OpenCode, Droid, Pi and more against OpenRouter, DeepSee
 Groq, a local Ollama — or any OpenAI- or Anthropic-compatible endpoint.
 
 [![npm](https://img.shields.io/npm/v/anyagent?color=%230b7285)](https://www.npmjs.com/package/anyagent)
-[![CI](https://github.com/anyagent/anyagent/actions/workflows/ci.yml/badge.svg)](https://github.com/anyagent/anyagent/actions/workflows/ci.yml)
+[![CI](https://github.com/waspdev95/anyagent/actions/workflows/ci.yml/badge.svg)](https://github.com/waspdev95/anyagent/actions/workflows/ci.yml)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![node](https://img.shields.io/badge/node-%E2%89%A520.10-brightgreen)](https://nodejs.org)
 
@@ -295,7 +295,7 @@ Issues and pull requests are welcome — especially new agents, new provider
 endpoints, and corrections when a vendor changes something.
 
 ```bash
-git clone https://github.com/anyagent/anyagent
+git clone https://github.com/waspdev95/anyagent
 cd anyagent
 npm install
 npm run verify     # typecheck, lint, format, tests, build

@@ -39,7 +39,7 @@ export interface ProviderOverlay {
  * anyagent on their app leaderboard instead of showing up as anonymous.
  */
 const OPENROUTER_HEADERS = {
-  'HTTP-Referer': 'https://github.com/anyagent/anyagent',
+  'HTTP-Referer': 'https://github.com/waspdev95/anyagent',
   'X-Title': 'anyagent',
 };
 
