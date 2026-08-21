@@ -35,13 +35,25 @@ export const claude: Agent = {
     const small = target.smallModel?.id ?? model;
     const isAnthropic = target.provider.id === 'anthropic';
 
+    // Which variable carries the key decides which header Claude Code sends,
+    // and the two are not interchangeable:
+    //
+    //   ANTHROPIC_API_KEY    -> x-api-key, and treated as a direct-Anthropic
+    //                           credential that can take precedence over a saved
+    //                           login
+    //   ANTHROPIC_AUTH_TOKEN -> Authorization: Bearer, which is what every
+    //                           gateway expects
+    //
+    // Setting both - which this used to do - makes Claude Code warn about
+    // conflicting auth and can send it down the direct-Anthropic path. So a
+    // gateway gets the bearer token and an explicitly empty api key, exactly as
+    // OpenRouter's own guide instructs, while api.anthropic.com gets the
+    // x-api-key it actually reads.
     const env: Record<string, string> = {
       ANTHROPIC_BASE_URL: target.baseUrl,
-      // Claude Code sends the key as `x-api-key` or `Authorization: Bearer`
-      // depending on which variable is set. Compatible endpoints differ on
-      // which one they read, so both carry the same value.
-      ANTHROPIC_API_KEY: target.apiKey,
-      ANTHROPIC_AUTH_TOKEN: target.apiKey,
+      ...(isAnthropic
+        ? { ANTHROPIC_API_KEY: target.apiKey }
+        : { ANTHROPIC_AUTH_TOKEN: target.apiKey, ANTHROPIC_API_KEY: '' }),
 
       // Every tier points at the chosen model: a third-party endpoint has no
       // "opus" or "haiku" to fall back to, and an unmapped tier is a 404 at the

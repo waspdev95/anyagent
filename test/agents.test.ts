@@ -77,9 +77,19 @@ describe('claude', () => {
     }
   });
 
-  test('sends the key in both header styles', () => {
-    assert.equal(plan.env.ANTHROPIC_API_KEY, 'sk-or-v1-testkey0000000000');
+  test('a gateway gets a bearer token and an explicitly empty api key', () => {
+    // Setting both makes Claude Code report conflicting auth and can send it
+    // down the direct-Anthropic path instead of to the gateway.
     assert.equal(plan.env.ANTHROPIC_AUTH_TOKEN, 'sk-or-v1-testkey0000000000');
+    assert.equal(plan.env.ANTHROPIC_API_KEY, '');
+  });
+
+  test('direct Anthropic gets x-api-key, which is what it reads', () => {
+    const target = fixtureTarget({ wire: 'anthropic', baseUrl: 'https://api.anthropic.com' });
+    target.provider = { ...target.provider, id: 'anthropic', name: 'Anthropic' };
+    const direct = claude.plan(fixtureContext({ target }));
+    assert.equal(direct.env.ANTHROPIC_API_KEY, 'sk-or-v1-testkey0000000000');
+    assert.equal(direct.env.ANTHROPIC_AUTH_TOKEN, undefined);
   });
 
   test('declares the real context window so compaction is not mistimed', () => {

@@ -53,6 +53,57 @@ Flags anyagent does not recognise go straight to the agent:
 Already have `OPENROUTER_API_KEY` (or `GROQ_API_KEY`, `DEEPSEEK_API_KEY`, …)
 exported? Then there is nothing to set up — anyagent uses it.
 
+## Instead of doing this by hand
+
+Every guide for pointing an agent somewhere else reads like this. It is
+OpenRouter's, for Claude Code:
+
+```bash
+export ANTHROPIC_BASE_URL="https://openrouter.ai/api"
+export ANTHROPIC_AUTH_TOKEN="$OPENROUTER_API_KEY"
+export ANTHROPIC_API_KEY=""              # must be empty, or Claude Code
+                                         # authenticates against Anthropic instead
+export ANTHROPIC_DEFAULT_OPUS_MODEL="..."
+export ANTHROPIC_DEFAULT_SONNET_MODEL="..."
+export ANTHROPIC_DEFAULT_HAIKU_MODEL="..."
+export CLAUDE_CODE_SUBAGENT_MODEL="..."
+```
+
+Then the same problem again, solved differently, for every other agent: Codex
+needs a TOML profile with `wire_api = "responses"`, OpenCode wants JSON, Droid
+wants an entry in `~/.factory/settings.json`, DeepSeek Harness wants a YAML
+patch.
+
+```bash
+anyagent claude    # this
+```
+
+Two things anyagent does that the manual route does not:
+
+- **Nothing is exported into your shell.** The variables exist for the launched
+  process only, so a plain `claude` still uses your Anthropic account, and two
+  terminals can run two models at once.
+- **The real context window is passed through.** Claude Code assumes 200K for a
+  model it does not recognise, so a 1M-token model compacts far too early and a
+  small one too late. anyagent reads the actual limit from the catalog and sets
+  `CLAUDE_CODE_MAX_CONTEXT_TOKENS`.
+
+### Common pairings
+
+|                               |                                                    |
+| ----------------------------- | -------------------------------------------------- |
+| Claude Code on DeepSeek       | `anyagent claude -m deepseek/deepseek-v4-pro`      |
+| Claude Code on Kimi           | `anyagent claude -m moonshotai/kimi-k3`            |
+| Claude Code on GLM / Z.ai     | `anyagent claude --provider zai`                   |
+| Claude Code on a local Ollama | `anyagent claude --provider ollama -m qwen3-coder` |
+| Codex on GPT-5.6              | `anyagent codex -m openai/gpt-5.6-sol`             |
+| Codex on Groq                 | `anyagent codex --provider groq`                   |
+| OpenCode on anything          | `anyagent opencode -m <model>`                     |
+
+Claude Code needs an Anthropic-compatible endpoint and Codex needs OpenAI's
+Responses API, so not every pairing exists. `anyagent compat` says which do,
+before you start rather than three turns in.
+
 ## What it works with
 
 **Agents:** `claude` · `codex` · `opencode` · `copilot` · `droid` · `dsh` ·
@@ -69,10 +120,6 @@ Anything else works with an explicit endpoint:
 anyagent opencode --base-url http://localhost:8080/v1 -m my-model
 anyagent exec -- aider --model deepseek/deepseek-v4-pro  # tools with no integration
 ```
-
-One catch worth knowing: agents speak different APIs, so not every pair works.
-anyagent checks before starting and tells you what to use instead. Run
-`anyagent compat` for the grid.
 
 ## Your files stay yours
 

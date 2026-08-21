@@ -5,6 +5,21 @@ Notable changes, newest first. This project follows
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-08-21
+
+### Fixed
+
+- Claude Code was given both `ANTHROPIC_API_KEY` and `ANTHROPIC_AUTH_TOKEN`.
+  They are not interchangeable: the first is sent as `x-api-key` and treated as
+  a direct-Anthropic credential, which made Claude Code report conflicting auth.
+  A gateway now gets the bearer token and an explicitly empty api key, as
+  OpenRouter's own guide instructs; `api.anthropic.com` still gets `x-api-key`.
+
+### Added
+
+- README shows the manual setup anyagent replaces, and a table of common
+  agent/provider pairings.
+
 ## [0.1.1] - 2026-08-21
 
 - Published as `@waspdev95/anyagent`, matching the GitHub path. The command is
