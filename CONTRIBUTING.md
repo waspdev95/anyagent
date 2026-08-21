@@ -157,6 +157,20 @@ npm run snapshot    # rebuild src/data/catalog.snapshot.json.gz from models.dev
 The snapshot is what makes a fresh install work with no network. Regenerate it
 when it drifts far enough to matter; it is roughly 150 KB.
 
+## Credentials
+
+This project handles API keys, so its own repository is exactly the kind of place
+one ends up by accident. CI fails any push that adds something key-shaped, over
+the whole history:
+
+```bash
+npm run scan     # same check, locally
+```
+
+Test fixtures live in an explicit allowlist in `scripts/scan-secrets.mjs`. Adding
+to it is a decision, not a formality - if a value could possibly be real, revoke
+it at the provider instead.
+
 ## Style
 
 - TypeScript, strict, ESM. No runtime dependencies — please keep it that way.

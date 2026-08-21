@@ -48,6 +48,7 @@
     "test:watch": "node scripts/test.mjs --watch",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src test scripts",
+    "scan": "node scripts/scan-secrets.mjs --history",
     "format": "prettier --write \"**/*.{ts,mjs,json,md,yml}\"",
     "format:check": "prettier --check \"**/*.{ts,mjs,json,md,yml}\"",
     "snapshot": "node scripts/build-snapshot.mjs",
