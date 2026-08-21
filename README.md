@@ -15,7 +15,7 @@ local Ollama, or anywhere else. Each of them has its own way of pointing
 somewhere else. This is one command for all of them.
 
 ```bash
-npm install -g anyagent
+npm install -g @anyagent/cli
 anyagent
 ```
 

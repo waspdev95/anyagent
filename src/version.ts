@@ -2,6 +2,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+/** The npm package name. The command is `anyagent`; the package is scoped. */
+const PACKAGE_NAME = '@anyagent/cli';
+
 /**
  * The published version, read from package.json rather than duplicated in a
  * source file that would drift.
@@ -20,7 +23,7 @@ function readVersion(): string {
           name?: string;
           version?: string;
         };
-        if (parsed.name === 'anyagent' && parsed.version) return parsed.version;
+        if (parsed.name === PACKAGE_NAME && parsed.version) return parsed.version;
       } catch {
         // Keep walking: an unrelated, unreadable package.json is not fatal.
       }
