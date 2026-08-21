@@ -235,6 +235,13 @@ describe('secret hygiene', () => {
     assert.equal(maskKey('short'), '*****');
   });
 
+  test('an empty value says so rather than looking like a secret', () => {
+    // anyagent blanks ANTHROPIC_API_KEY deliberately; rendering that as ****
+    // would tell someone verifying it the opposite of the truth.
+    assert.equal(maskKey(''), '(empty)');
+    assert.equal(maskKey('   '), '(empty)');
+  });
+
   test('redaction strips key-shaped strings from error text', () => {
     const text = 'failed with Authorization: Bearer sk-or-v1-abcdef0123456789 on retry';
     const cleaned = redact(text);

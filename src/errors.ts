@@ -43,9 +43,16 @@ export function redact(text: string): string {
   return out;
 }
 
-/** Show enough of a key to be recognisable, never enough to be usable. */
+/**
+ * Show enough of a key to be recognisable, never enough to be usable.
+ *
+ * An empty value says so instead of rendering as asterisks: anyagent sets
+ * `ANTHROPIC_API_KEY` to an empty string on purpose, and showing that as `****`
+ * would tell someone checking exactly the opposite of the truth.
+ */
 export function maskKey(key: string): string {
   const trimmed = key.trim();
+  if (trimmed === '') return '(empty)';
   if (trimmed.length <= 12) return '*'.repeat(Math.max(trimmed.length, 4));
   return `${trimmed.slice(0, 8)}...${trimmed.slice(-4)}`;
 }

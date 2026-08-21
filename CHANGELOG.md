@@ -5,6 +5,14 @@ Notable changes, newest first. This project follows
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-08-21
+
+### Fixed
+
+- An empty credential rendered as `****` in `--dry-run` and `key`, which made
+  the deliberately blanked `ANTHROPIC_API_KEY` look like a key that was set.
+  Empty values now read `(empty)`.
+
 ## [0.1.2] - 2026-08-21
 
 ### Fixed
