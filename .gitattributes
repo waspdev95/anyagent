@@ -1,0 +1,8 @@
+# Keep line endings stable across platforms.
+#
+# Prettier checks for LF, and CI runs on Linux, macOS and Windows - without this
+# a Windows checkout would fail `format:check` on files nobody touched.
+* text=auto eol=lf
+
+*.gz binary
+*.png binary
