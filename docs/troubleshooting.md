@@ -54,7 +54,7 @@ Common causes:
 ## Claude Code says the model is not recognised
 
 ```
-[claude-code:unrecognized_model] {"model":"deepseek/deepseek-chat", ...}
+[claude-code:unrecognized_model] {"model":"deepseek/deepseek-v4-pro", ...}
 ```
 
 Harmless. Claude Code keeps an internal list of Anthropic model ids and logs this
@@ -148,7 +148,7 @@ everything up front:
 
 ```bash
 export OPENROUTER_API_KEY=...      # or ANYAGENT_OPENROUTER_API_KEY
-anyagent claude --provider openrouter -m deepseek/deepseek-chat -- -p "review this diff"
+anyagent claude --provider openrouter -m deepseek/deepseek-v4-pro -- -p "review this diff"
 ```
 
 `--json` is available on `ls`, `providers`, `models`, `compat`, `doctor`,

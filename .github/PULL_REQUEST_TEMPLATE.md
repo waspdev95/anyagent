@@ -8,7 +8,7 @@
 Concrete beats thorough. For an integration, the command you actually ran and
 what came back:
 
-    anyagent codex -m deepseek/deepseek-chat -- exec "say hi"   # replied
+    anyagent codex -m openai/gpt-5.6-sol -- exec "say hi"   # replied
 
 Note the agent and provider versions you tested against.
 -->
