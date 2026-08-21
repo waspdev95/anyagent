@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /** The npm package name. The command is `anyagent`; the package is scoped. */
-const PACKAGE_NAME = '@anyagent/cli';
+const PACKAGE_NAME = '@anyagenthq/cli';
 
 /**
  * The published version, read from package.json rather than duplicated in a

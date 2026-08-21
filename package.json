@@ -1,5 +1,5 @@
 {
-  "name": "@anyagent/cli",
+  "name": "@anyagenthq/cli",
   "version": "0.1.0",
   "description": "Any coding agent. Any model. One command. Run Claude Code, Codex, OpenCode, Droid, Pi and more against OpenRouter, DeepSeek, Groq, Ollama or any OpenAI/Anthropic-compatible endpoint.",
   "keywords": [
